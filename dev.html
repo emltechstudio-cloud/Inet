@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iNet Developer Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#07090f;--s1:#0d1117;--s2:#161b22;--s3:#21262d;--bd:rgba(255,255,255,0.06);--bd2:rgba(255,255,255,0.1);--red:#e63946;--red-g:rgba(230,57,70,0.22);--red-d:rgba(230,57,70,0.1);--green:#22c55e;--green-d:rgba(34,197,94,0.1);--blue:#3b82f6;--blue-d:rgba(59,130,246,0.08);--yellow:#f59e0b;--purple:#8b5cf6;--tx:#e6edf3;--t2:#8b949e;--t3:#484f58;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--disp:'Syne',sans-serif;}
+html{scroll-behavior:smooth;}body{font-family:var(--sans);background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+#authWrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;}#authWrap::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(230,57,70,0.07) 0%,transparent 65%);pointer-events:none;}
+.auth-box{width:100%;max-width:420px;background:var(--s1);border:1px solid var(--bd2);border-radius:20px;padding:36px;position:relative;z-index:1;}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:32px;}
+.auth-mark{width:36px;height:36px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;color:#fff;box-shadow:0 0 16px var(--red-g);}
+.auth-brand{font-family:var(--disp);font-weight:700;font-size:1rem;}
+.auth-brand span{color:var(--t2);font-size:0.8rem;font-weight:400;margin-left:4px;}
+.auth-title{font-family:var(--disp);font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:6px;}
+.auth-sub{font-size:0.82rem;color:var(--t2);margin-bottom:24px;line-height:1.6;}
+.auth-toggle{color:var(--red);cursor:pointer;text-decoration:underline;font-size:0.82rem;}
+#portalWrap{display:none;}.portal{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:240px;background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;z-index:50;overflow-y:auto;}
+.sidebar-top{padding:20px 16px;border-bottom:1px solid var(--bd);}.sb-logo{display:flex;align-items:center;gap:8px;}
+.sb-mark{width:28px;height:28px;background:var(--red);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:#fff;box-shadow:0 0 10px var(--red-g);}
+.sb-name{font-family:var(--disp);font-weight:700;font-size:0.9rem;}.sb-badge{font-family:var(--mono);font-size:0.6rem;color:var(--red);border:1px solid rgba(230,57,70,0.3);padding:2px 6px;border-radius:10px;margin-left:4px;}
+.sb-dev{margin-top:12px;padding:10px 12px;background:var(--s2);border-radius:10px;}.sb-dev-name{font-weight:600;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-dev-email{font-size:0.7rem;color:var(--t2);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-nav{flex:1;padding:12px 8px;}.nav-label{font-family:var(--mono);font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:2px;padding:4px 8px;margin-top:8px;margin-bottom:4px;}
+.nav-link{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;cursor:pointer;color:var(--t2);font-size:0.82rem;font-weight:500;transition:all .15s;text-decoration:none;user-select:none;}
+.nav-link:hover{background:var(--s2);color:var(--tx);}.nav-link.active{background:rgba(230,57,70,0.1);color:var(--red);}
+.nav-link svg{width:15px;height:15px;fill:currentColor;flex-shrink:0;}.sidebar-bottom{padding:12px 16px;border-top:1px solid var(--bd);}
+.logout-btn{width:100%;display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;border:none;background:transparent;color:var(--t2);font-family:var(--sans);font-size:0.82rem;cursor:pointer;transition:all .15s;}
+.logout-btn:hover{background:rgba(230,57,70,0.08);color:var(--red);}.logout-btn svg{width:15px;height:15px;fill:currentColor;}
+.main-content{margin-left:240px;padding:32px 40px;max-width:960px;}.page{display:none;}.page.active{display:block;}
+.page-hd{margin-bottom:28px;}.page-ey{font-family:var(--mono);font-size:0.65rem;color:var(--red);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.page-title{font-family:var(--disp);font-size:1.7rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:6px;}
+.page-sub{color:var(--t2);font-size:0.85rem;line-height:1.7;font-weight:300;}
+.card{background:var(--s1);border:1px solid var(--bd2);border-radius:14px;padding:22px;margin-bottom:16px;}
+.card-title{font-family:var(--disp);font-weight:700;font-size:0.95rem;margin-bottom:4px;}
+.card-sub{font-size:0.79rem;color:var(--t2);line-height:1.6;margin-bottom:16px;}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.stat{background:var(--s1);border:1px solid var(--bd2);border-radius:12px;padding:18px 20px;}
+.stat-val{font-family:var(--disp);font-size:2rem;font-weight:800;margin-bottom:3px;}.stat-val.red{color:var(--red);}.stat-val.green{color:var(--green);}.stat-val.blue{color:var(--blue);}
+.stat-label{font-family:var(--mono);font-size:0.62rem;color:var(--t2);}
+.key-item{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;}
+.key-icon{width:36px;height:36px;border-radius:9px;background:rgba(230,57,70,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.key-icon svg{width:16px;height:16px;fill:var(--red);}.key-info{flex:1;min-width:0;}.key-name{font-weight:600;font-size:0.85rem;margin-bottom:2px;}
+.key-preview{font-family:var(--mono);font-size:0.7rem;color:var(--t2);}.key-meta{font-family:var(--mono);font-size:0.65rem;color:var(--t3);text-align:right;flex-shrink:0;}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-family:var(--mono);font-size:0.6rem;}
+.pill-green{background:var(--green-d);color:var(--green);border:1px solid rgba(34,197,94,0.2);}.pill-red{background:var(--red-d);color:var(--red);border:1px solid rgba(230,57,70,0.2);}
+.pill-dot{width:4px;height:4px;border-radius:50%;background:currentColor;}
+.field{margin-bottom:12px;}.field label{display:block;font-family:var(--mono);font-size:0.65rem;color:var(--t2);margin-bottom:6px;}
+.field input,.field select,.field textarea{width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--bd2);border-radius:9px;color:var(--tx);font-family:var(--sans);font-size:0.86rem;transition:border-color .2s;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--red);}.field input::placeholder,.field textarea::placeholder{color:var(--t3);}
+.field textarea{resize:vertical;min-height:90px;line-height:1.5;font-family:var(--mono);font-size:0.78rem;}.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border:none;border-radius:9px;font-family:var(--sans);font-size:0.84rem;font-weight:600;cursor:pointer;transition:all .15s;}
+.btn:active{transform:scale(0.97);}.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none !important;}
+.btn-primary{background:var(--red);color:#fff;box-shadow:0 4px 14px var(--red-g);}.btn-primary:hover{box-shadow:0 6px 20px var(--red-g);transform:translateY(-1px);}
+.btn-ghost{background:var(--s2);color:var(--t2);border:1px solid var(--bd2);}.btn-ghost:hover{color:var(--tx);}.btn-green{background:var(--green);color:#000;}
+.btn svg{width:14px;height:14px;fill:currentColor;flex-shrink:0;}.btn-row{display:flex;gap:8px;}
+.key-reveal{background:#010409;border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-top:14px;}
+.key-reveal-val{font-family:var(--mono);font-size:0.75rem;color:var(--green);flex:1;word-break:break-all;}
+.copy-btn{background:transparent;border:1px solid var(--bd2);padding:5px 10px;border-radius:7px;font-family:var(--mono);font-size:0.63rem;color:var(--t2);cursor:pointer;white-space:nowrap;transition:all .15s;}
+.copy-btn:hover{background:var(--s3);color:var(--tx);}
+.result{background:#010409;border:1px solid var(--bd2);border-radius:9px;padding:14px;margin-top:12px;display:none;}.result.show{display:block;}
+.result-label{font-family:var(--mono);font-size:0.58rem;color:var(--t3);margin-bottom:7px;}
+.result-body{font-family:var(--mono);font-size:0.75rem;line-height:1.65;white-space:pre-wrap;word-break:break-all;}.result-body.ok{color:var(--green);}.result-body.err{color:var(--red);}
+.integrations-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;}
+.int-card{background:var(--s1);border:1px solid var(--bd2);border-radius:14px;padding:22px;cursor:pointer;transition:all .2s;}
+.int-card:hover{border-color:rgba(230,57,70,0.3);transform:translateY(-2px);}.int-card.active{border-color:var(--red);background:rgba(230,57,70,0.04);}
+.int-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+.int-icon svg{width:22px;height:22px;}.int-icon.red{background:var(--red-d);}.int-icon.red svg{fill:var(--red);}
+.int-icon.blue{background:var(--blue-d);}.int-icon.blue svg{fill:var(--blue);}
+.int-icon.green{background:var(--green-d);}.int-icon.green svg{fill:var(--green);}
+.int-icon.purple{background:rgba(139,92,246,0.1);}.int-icon.purple svg{fill:var(--purple);}
+.int-title{font-family:var(--disp);font-weight:700;font-size:0.95rem;margin-bottom:5px;}
+.int-desc{font-size:0.78rem;color:var(--t2);line-height:1.55;}
+.int-arrow{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:0.68rem;color:var(--red);margin-top:12px;}
+.int-arrow svg{width:12px;height:12px;fill:var(--red);}
+.int-detail{display:none;}.int-detail.active{display:block;}
+.int-back{display:inline-flex;align-items:center;gap:6px;color:var(--t2);font-size:0.8rem;cursor:pointer;margin-bottom:20px;transition:color .15s;}
+.int-back:hover{color:var(--tx);}.int-back svg{width:14px;height:14px;fill:currentColor;}
+.code-wrap{background:#010409;border:1px solid var(--bd2);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+.code-hdr{background:var(--s2);padding:9px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd);}
+.code-lang{font-family:var(--mono);font-size:0.62rem;color:var(--t3);}
+.code-copy-btn{font-family:var(--mono);font-size:0.62rem;color:var(--t2);background:none;border:none;cursor:pointer;transition:color .15s;}
+.code-copy-btn:hover{color:var(--tx);}pre{padding:18px;overflow-x:auto;font-family:var(--mono);font-size:0.75rem;line-height:1.75;color:#e6edf3;}
+.kw{color:#ff7b72;}.fn{color:#d2a8ff;}.str{color:#a5d6ff;}.cm{color:#484f58;}.prop{color:#79c0ff;}.hl{color:#f2cc60;}
+.steps{display:flex;flex-direction:column;gap:10px;}.step{display:flex;align-items:flex-start;gap:12px;}
+.step-n{width:24px;height:24px;border-radius:50%;flex-shrink:0;background:var(--red-d);border:1px solid rgba(230,57,70,0.25);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:0.64rem;color:var(--red);margin-top:2px;}
+.step-body .step-title{font-weight:600;font-size:0.85rem;margin-bottom:2px;}.step-body .step-desc{font-size:0.77rem;color:var(--t2);line-height:1.55;}
+.itabs{display:flex;gap:2px;background:var(--s2);border-radius:9px;padding:3px;margin-bottom:16px;}
+.itab{flex:1;padding:7px;text-align:center;border-radius:7px;cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--t2);transition:all .15s;}
+.itab.active{background:var(--s3);color:var(--tx);}
+.alert{padding:11px 14px;border-radius:9px;font-size:0.79rem;display:flex;align-items:flex-start;gap:9px;margin-bottom:14px;line-height:1.6;}
+.alert svg{width:14px;height:14px;fill:currentColor;flex-shrink:0;margin-top:1px;}
+.alert-info{background:var(--blue-d);border:1px solid rgba(59,130,246,0.2);color:#93c5fd;}
+.alert-warn{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fbbf24;}
+.alert-success{background:var(--green-d);border:1px solid rgba(34,197,94,0.2);color:var(--green);}
+.ep{background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:12px 14px;margin-bottom:7px;display:flex;align-items:flex-start;gap:11px;}
+.method{font-family:var(--mono);font-size:0.62rem;font-weight:600;padding:3px 7px;border-radius:5px;white-space:nowrap;margin-top:2px;}
+.post{background:rgba(34,197,94,0.12);color:var(--green);}.get{background:var(--blue-d);color:var(--blue);}
+.ep-path{font-family:var(--mono);font-size:0.79rem;color:var(--tx);margin-bottom:2px;}
+.ep-desc{font-size:0.75rem;color:var(--t2);}.ep-auth{font-family:var(--mono);font-size:0.61rem;color:var(--yellow);margin-top:3px;}
+.account-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+.account-item{background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;}
+.account-item:hover{border-color:var(--red);background:rgba(230,57,70,0.05);}
+.account-item.selected{border-color:var(--red);background:rgba(230,57,70,0.08);}
+.account-avatar{width:40px;height:40px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:16px;font-weight:700;color:#fff;}
+.account-info{flex:1;}.account-pin{font-family:var(--mono);font-size:0.85rem;font-weight:600;color:var(--tx);}
+.account-meta{font-size:0.7rem;color:var(--t2);margin-top:2px;}
+@media(max-width:768px){.portal{grid-template-columns:1fr;}.sidebar{width:100%;border-right:none;border-bottom:1px solid var(--bd);position:relative;height:auto;}.main-content{margin-left:0;padding:20px;}.stats-grid,.integrations-grid,.field-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div id="authWrap">
+  <div class="auth-box" id="authBox">
+    <div class="auth-logo">
+      <div class="auth-mark">iN</div>
+      <div class="auth-brand">iNet <span>Developers</span></div>
+    </div>
+    <div id="viewLogin">
+      <div class="auth-title">Welcome back</div>
+      <div class="auth-sub">Log in to your developer account. Don't have one? <span class="auth-toggle" onclick="switchAuth('signup')">Sign up free.</span></div>
+      <div class="field"><label>Email</label><input type="email" id="li-email" placeholder="you@company.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="li-pass" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-primary" id="li-btn" onclick="doLogin()" style="width:100%;justify-content:center;margin-top:4px;">
+        <svg viewBox="0 0 24 24"><path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/></svg>Log In
+      </button>
+      <div class="result" id="li-result"><div class="result-label">Response</div><div class="result-body" id="li-body"></div></div>
+    </div>
+    <div id="viewSignup" style="display:none">
+      <div class="auth-title">Create account</div>
+      <div class="auth-sub">Free forever. No credit card. Already registered? <span class="auth-toggle" onclick="switchAuth('login')">Log in.</span></div>
+      <div class="field-row">
+        <div class="field"><label>Email</label><input type="email" id="su-email" placeholder="you@company.com"></div>
+        <div class="field"><label>Company / App Name</label><input type="text" id="su-company" placeholder="Trades, MyApp..."></div>
+      </div>
+      <div class="field"><label>Password</label><input type="password" id="su-pass" placeholder="At least 8 characters"></div>
+      <button class="btn btn-primary" id="su-btn" onclick="doSignup()" style="width:100%;justify-content:center;margin-top:4px;">
+        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Create Account
+      </button>
+      <div class="result" id="su-result"><div class="result-label">Response</div><div class="result-body" id="su-body"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="portalWrap">
+<div class="portal">
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sb-logo"><div class="sb-mark">iN</div><div class="sb-name">iNet <span class="sb-badge">Dev</span></div></div>
+      <div class="sb-dev"><div class="sb-dev-name" id="sb-company">-</div><div class="sb-dev-email" id="sb-email">-</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Overview</div>
+      <div class="nav-link active" onclick="showPage('dashboard',this)"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Dashboard</div>
+      <div class="nav-label">API Keys</div>
+      <div class="nav-link" onclick="showPage('keys',this)"><svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>My API Keys</div>
+      <div class="nav-label">Integrations</div>
+      <div class="nav-link" onclick="showPage('integrations',this)"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/></svg>All Integrations</div>
+      <div class="nav-link" onclick="showPage('otp',this)"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>OTP Auth</div>
+      <div class="nav-link" onclick="showPage('continue',this)"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>Continue with iNet</div>
+      <div class="nav-link" onclick="showPage('messages',this)"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>Send Messages</div>
+      <div class="nav-label">Test</div>
+      <div class="nav-link" onclick="showPage('sandbox',this)"><svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>Sandbox</div>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="doLogout()"><svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>Log Out</button>
+    </div>
+  </aside>
+
+  <div class="main-content">
+    <div class="page active" id="page-dashboard">
+      <div class="page-hd"><div class="page-ey">Overview</div><div class="page-title">Dashboard</div><div class="page-sub">Everything about your iNet developer account at a glance.</div></div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-val red" id="stat-keys">-</div><div class="stat-label">API Keys</div></div>
+        <div class="stat"><div class="stat-val green" id="stat-active">-</div><div class="stat-label">Active Keys</div></div>
+        <div class="stat"><div class="stat-val blue" id="stat-calls">-</div><div class="stat-label">API Calls (all time)</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Quick Start</div><div class="card-sub">Get up and running in 3 steps.</div>
+        <div class="steps">
+          <div class="step"><div class="step-n">1</div><div class="step-body"><div class="step-title">Create an API key</div><div class="step-desc">Go to <span style="color:var(--red);cursor:pointer" onclick="showPage('keys',null)">My API Keys</span> and generate a key for your app.</div></div></div>
+          <div class="step"><div class="step-n">2</div><div class="step-body"><div class="step-title">Pick an integration</div><div class="step-desc">OTP auth, Continue with iNet, or custom messages. Each has a full guide.</div></div></div>
+          <div class="step"><div class="step-n">3</div><div class="step-body"><div class="step-title">Test in the Sandbox</div><div class="step-desc">Send real requests to real iNet PINs before going live.</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Base URL</div><div class="card-sub">All API requests go to this endpoint.</div>
+        <div style="background:#010409;border:1px solid var(--bd2);border-radius:9px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <span style="font-family:var(--mono);font-size:0.82rem;color:var(--green)">https://emltechstudio-inet-v2.hf.space</span>
+          <button class="copy-btn" onclick="copyText('https://emltechstudio-inet-v2.hf.space',this)">Copy</button>
+        </div>
+      </div>
+      <div class="alert alert-info"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>Always keep your API key on your backend server. Never expose it in frontend JavaScript code.</div>
+    </div>
+
+    <div class="page" id="page-keys">
+      <div class="page-hd"><div class="page-ey">API Keys</div><div class="page-title">My API Keys</div><div class="page-sub">Keys are HMAC-signed and expire after 365 days by default. Create one per app.</div></div>
+      <div class="card">
+        <div class="card-title">Create New Key</div><div class="card-sub">Give it a name you'll recognise later.</div>
+        <div class="field-row">
+          <div class="field"><label>Key Name</label><input type="text" id="ck-name" placeholder="e.g. Trades Production"></div>
+          <div class="field"><label>Expires in (days)</label><input type="number" id="ck-expires" value="365" min="1" max="730"></div>
+        </div>
+        <button class="btn btn-primary" id="ck-btn" onclick="createKey()"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Generate API Key</button>
+        <div id="ck-reveal" style="display:none">
+          <div style="margin-top:14px;font-size:0.78rem;color:var(--yellow);margin-bottom:8px;">Copy this key now - it will never be shown again in full.</div>
+          <div class="key-reveal"><div class="key-reveal-val" id="ck-key-val">-</div><button class="copy-btn" onclick="copyText(document.getElementById('ck-key-val').textContent,this)">Copy</button></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Existing Keys</div><div class="card-sub">Previews only - full key shown once at creation.</div>
+        <button class="btn btn-ghost" onclick="loadKeys()" style="margin-bottom:14px;"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>Refresh</button>
+        <div id="keys-list"><div style="color:var(--t2);font-size:0.8rem">Click Refresh to load your keys.</div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-integrations">
+      <div class="int-detail" id="int-overview" style="display:block">
+        <div class="page-hd"><div class="page-ey">Integrations</div><div class="page-title">What do you want to build?</div><div class="page-sub">Pick an integration and get a full guide with code examples.</div></div>
+        <div class="integrations-grid">
+          <div class="int-card" onclick="showPage('otp',null)">
+            <div class="int-icon red"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+            <div class="int-title">OTP Authentication</div><div class="int-desc">Send a one-time code to any iNet PIN. User enters it to verify. Works like email OTP but through iNet.</div>
+            <div class="int-arrow">View guide <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+          </div>
+          <div class="int-card" onclick="showPage('continue',null)">
+            <div class="int-icon green"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+            <div class="int-title">Continue with iNet</div><div class="int-desc">Add a "Continue with iNet" button to your app. Users sign in with their PIN - no Google, no email.</div>
+            <div class="int-arrow">View guide <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+          </div>
+          <div class="int-card" onclick="showPage('messages',null)">
+            <div class="int-icon blue"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>
+            <div class="int-title">Send Messages</div><div class="int-desc">Push any text or HTML message to an iNet user. Rendered like email inside the app. No content restrictions.</div>
+            <div class="int-arrow">View guide <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+          </div>
+          <div class="int-card" style="opacity:0.5;pointer-events:none;">
+            <div class="int-icon purple"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
+            <div class="int-title">Device Auth <span style="font-family:var(--mono);font-size:0.6rem;color:var(--t3);margin-left:6px;">Coming soon</span></div>
+            <div class="int-desc">Fingerprint-based sign-in. If iNet is installed, users authenticate with one tap - no PIN entry needed.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-otp">
+      <div class="int-back" onclick="showPage('integrations',null)"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back to Integrations</div>
+      <div class="page-hd"><div class="page-ey">Integration Guide</div><div class="page-title">OTP Authentication</div><div class="page-sub">Verify your users by sending a 6-digit code to their iNet PIN. Expires in 5 minutes.</div></div>
+      <div class="card">
+        <div class="card-title">How it works</div>
+        <div class="steps">
+          <div class="step"><div class="step-n">1</div><div class="step-body"><div class="step-title">User enters their iNet PIN</div><div class="step-desc">Show a PIN input on your login page.</div></div></div>
+          <div class="step"><div class="step-n">2</div><div class="step-body"><div class="step-title">Your backend calls /api/otp/send</div><div class="step-desc">iNet sends the code to that PIN. The OTP is returned in the response - store it server-side.</div></div></div>
+          <div class="step"><div class="step-n">3</div><div class="step-body"><div class="step-title">User enters the code</div><div class="step-desc">They see the OTP in their iNet app and type it into your site.</div></div></div>
+          <div class="step"><div class="step-n">4</div><div class="step-body"><div class="step-title">Verify with /api/otp/verify</div><div class="step-desc">Returns { valid: true/false }. Log the user in if valid.</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Send OTP - JavaScript</div>
+        <div class="code-wrap">
+          <div class="code-hdr"><span class="code-lang">javascript (Node.js / backend only)</span><button class="code-copy-btn" onclick="copyCode(this)">copy</button></div>
+          <pre>// STEP 1: Send OTP to user's PIN
+const res = await fetch('https://emltechstudio-inet-v2.hf.space/api/otp/send', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': process.env.INET_API_KEY
+  },
+  body: JSON.stringify({ net_number: userPin })
+});
+const { otp } = await res.json();
+// Store otp in your session/db against this user
+session.pendingOtp = otp;
+session.pendingPin = userPin;</pre>
+        </div>
+        <div class="card-title" style="margin-top:8px">Verify OTP - JavaScript</div>
+        <div class="code-wrap">
+          <div class="code-hdr"><span class="code-lang">javascript (backend)</span><button class="code-copy-btn" onclick="copyCode(this)">copy</button></div>
+          <pre>// STEP 2: Verify when user submits the code
+const res = await fetch(
+  `https://emltechstudio-inet-v2.hf.space/api/otp/verify?net_number=${userPin}&otp=${userEnteredCode}`,
+  { method: 'POST' }
+);
+const { valid } = await res.json();
+if (valid) {
+  createUserSession({ pin: userPin });
+} else {
+  respondWithError('Invalid or expired code');
+}</pre>
+        </div>
+      </div>
+      <div class="alert alert-warn"><svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>OTPs expire after 5 minutes. Never verify on the frontend - always call the verify endpoint from your backend server.</div>
+    </div>
+
+    <div class="page" id="page-continue">
+      <div class="int-back" onclick="showPage('integrations',null)"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back to Integrations</div>
+      <div class="page-hd"><div class="page-ey">Integration Guide</div><div class="page-title">Continue with iNet</div><div class="page-sub">Add iNet as an auth provider. Users sign in with their PIN + OTP. No passwords, no Google, no email.</div></div>
+      <div class="card" style="background:rgba(34,197,94,0.04);border-color:rgba(34,197,94,0.2)">
+        <div class="card-title">The Button</div><div class="card-sub">Copy this HTML to add the button to your site.</div>
+        <div class="code-wrap">
+          <div class="code-hdr"><span class="code-lang">html</span><button class="code-copy-btn" onclick="copyCode(this)">copy</button></div>
+          <pre>&lt;button onclick="loginWithInet()" style="
+  background:#e63946;color:#fff;border:none;
+  padding:12px 24px;border-radius:30px;
+  font-size:1rem;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;gap:10px;
+"&gt;
+  &lt;span&gt;iN&lt;/span&gt;
+  Continue with iNet
+&lt;/button&gt;</pre>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Full Flow</div>
+        <div class="steps" style="margin-bottom:16px">
+          <div class="step"><div class="step-n">1</div><div class="step-body"><div class="step-title">User clicks "Continue with iNet"</div><div class="step-desc">Your app collects the device fingerprint and sends it to iNet.</div></div></div>
+          <div class="step"><div class="step-n">2</div><div class="step-body"><div class="step-title">iNet returns matching accounts</div><div class="step-desc">Call /api/login-with-inet with the fingerprint. iNet returns all PINs linked to that device.</div></div></div>
+          <div class="step"><div class="step-n">3</div><div class="step-body"><div class="step-title">User picks an account</div><div class="step-desc">Show a chooser: "Which account do you want to use?" The user selects one PIN.</div></div></div>
+          <div class="step"><div class="step-n">4</div><div class="step-body"><div class="step-title">Send OTP to verify</div><div class="step-desc">Call /api/otp/send for the chosen PIN. User enters the code to complete login.</div></div></div>
+        </div>
+        <div class="code-wrap">
+          <div class="code-hdr"><span class="code-lang">javascript - full example</span><button class="code-copy-btn" onclick="copyCode(this)">copy</button></div>
+          <pre>// 1. Get device fingerprint
+async function getFingerprint() {
+  const components = [
+    navigator.userAgent, navigator.language,
+    screen.width + 'x' + screen.height,
+    navigator.hardwareConcurrency
+  ];
+  const hash = await crypto.subtle.digest('SHA-256',
+    new TextEncoder().encode(components.join('::')));
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 2. Call Continue with iNet
+async function loginWithInet() {
+  const fp = await getFingerprint();
+  const res = await fetch('/api/login-with-inet', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': process.env.INET_API_KEY
+    },
+    body: JSON.stringify({ fingerprint: fp })
+  });
+  const { accounts } = await res.json();
+
+  // 3. Show account chooser
+  const pin = await showAccountChooser(accounts);
+
+  // 4. Send OTP
+  await fetch('/api/otp/send', {
+    method: 'POST',
+    headers: { 'X-API-Key': process.env.INET_API_KEY },
+    body: JSON.stringify({ net_number: pin })
+  });
+
+  // 5. Verify OTP
+  const code = prompt('Enter code from iNet app:');
+  const vfy = await fetch(
+    `/api/otp/verify?net_number=${pin}&otp=${code}`,
+    { method: 'POST' }
+  );
+  const { valid } = await vfy.json();
+  if (valid) createSession(pin);
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-messages">
+      <div class="int-back" onclick="showPage('integrations',null)"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>Back to Integrations</div>
+      <div class="page-hd"><div class="page-ey">Integration Guide</div><div class="page-title">Send Messages</div><div class="page-sub">Push any text or HTML to an iNet user. Rendered like an email inside the app. Delivered via WebSocket if online, push notification if not.</div></div>
+      <div class="alert alert-info"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>We forward your content as-is. HTML is rendered exactly like Gmail renders HTML email. No filtering, no restrictions - your responsibility.</div>
+      <div class="card">
+        <div class="card-title">Send plain text</div>
+        <div class="code-wrap">
+          <div class="code-hdr"><span class="code-lang">javascript</span><button class="code-copy-btn" onclick="copyCode(this)">copy</button></div>
+          <pre>await fetch('https://emltechstudio-inet-v2.hf.space/api/send', {
+  method: 'POST',
+  headers: { 'X-API-Key': YOUR_KEY, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    net_number: '487291',
+    type: 'text',
+    content: 'Your order has been confirmed!',
+    developer_name: 'Trades'
+  })
+});</pre>
+        </div>
+        <div class="card-title" style="margin-top:8px">Send HTML</div>
+        <div class="code-wrap">
+          <div class="code-hdr"><span class="code-lang">python</span><button class="code-copy-btn" onclick="copyCode(this)">copy</button></div>
+          <pre>requests.post(
+    'https://emltechstudio-inet-v2.hf.space/api/send',
+    headers={'X-API-Key': YOUR_KEY},
+    json={
+        'net_number': '487291',
+        'type': 'html',
+        'content': '''
+&lt;h2 style="color:#e63946"&gt;Welcome to Trades!&lt;/h2&gt;
+&lt;p&gt;Your account is ready.&lt;/p&gt;
+&lt;a href="https://trades.app/start"&gt;Get started &rarr;&lt;/a&gt;
+''',
+        'developer_name': 'Trades'
+    }
+)</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-sandbox">
+      <div class="page-hd"><div class="page-ey">Test</div><div class="page-title">Sandbox</div><div class="page-sub">Send real requests to real iNet PINs. Use your API key from My Keys.</div></div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">API Key</div>
+        <div class="field"><label>Paste your API key</label><input type="text" id="sb-key" placeholder="Paste full API key here" style="font-family:var(--mono);font-size:0.76rem;"></div>
+      </div>
+      <div class="itabs">
+        <div class="itab active" onclick="switchTab('otp2',this)">Send OTP</div>
+        <div class="itab" onclick="switchTab('msg2',this)">Send Message</div>
+        <div class="itab" onclick="switchTab('verify2',this)">Verify OTP</div>
+        <div class="itab" onclick="switchTab('login2',this)">Continue with iNet</div>
+      </div>
+      <div id="itab-otp2">
+        <div class="card">
+          <div class="card-title">Send OTP</div>
+          <div class="field"><label>Target PIN (6 digits)</label><input type="tel" id="otp-pin" placeholder="487291" maxlength="6" style="font-family:var(--mono);letter-spacing:3px;font-size:1rem;"></div>
+          <button class="btn btn-primary" id="otp-btn" onclick="sandboxOtp()"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>Send OTP</button>
+          <div class="result" id="otp-result"><div class="result-label">Response</div><div class="result-body" id="otp-body"></div></div>
+        </div>
+      </div>
+      <div id="itab-msg2" style="display:none">
+        <div class="card">
+          <div class="card-title">Send Message</div>
+          <div class="field"><label>Target PIN</label><input type="tel" id="msg-pin" placeholder="487291" maxlength="6" style="font-family:var(--mono);letter-spacing:3px;font-size:1rem;"></div>
+          <div class="field"><label>Type</label><select id="msg-type"><option value="text">text</option><option value="html">html</option></select></div>
+          <div class="field"><label>Content (text or HTML)</label><textarea id="msg-content" placeholder="Hello from my app!&#10;&#10;Or HTML: &lt;h2&gt;Welcome&lt;/h2&gt;"></textarea></div>
+          <button class="btn btn-primary" id="msg-btn" onclick="sandboxMsg()"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>Send Message</button>
+          <div class="result" id="msg-result"><div class="result-label">Response</div><div class="result-body" id="msg-body"></div></div>
+        </div>
+      </div>
+      <div id="itab-verify2" style="display:none">
+        <div class="card">
+          <div class="card-title">Verify OTP</div>
+          <div class="field"><label>Target PIN</label><input type="tel" id="vfy-pin" placeholder="487291" maxlength="6" style="font-family:var(--mono);letter-spacing:3px;font-size:1rem;"></div>
+          <div class="field"><label>OTP Code</label><input type="tel" id="vfy-code" placeholder="123456" maxlength="6" style="font-family:var(--mono);letter-spacing:4px;font-size:1.2rem;text-align:center;"></div>
+          <button class="btn btn-primary" id="vfy-btn" onclick="sandboxVerify()"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Verify</button>
+          <div class="result" id="vfy-result"><div class="result-label">Response</div><div class="result-body" id="vfy-body"></div></div>
+        </div>
+      </div>
+      <div id="itab-login2" style="display:none">
+        <div class="card">
+          <div class="card-title">Continue with iNet - Test</div>
+          <div class="card-sub">Simulate the full flow: fingerprint -> get accounts -> choose -> get PIN.</div>
+          <div class="field"><label>Device Fingerprint (or leave blank to generate)</label><input type="text" id="login-fp" placeholder="Paste a fingerprint hash or leave blank to generate" style="font-family:var(--mono);font-size:0.76rem;"></div>
+          <button class="btn btn-primary" id="login-btn" onclick="sandboxLoginWithInet()"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>Look Up Accounts</button>
+          <div id="login-accounts" style="margin-top:16px;display:none">
+            <div style="font-size:0.82rem;color:var(--t2);margin-bottom:8px;">Accounts found on this device:</div>
+            <div class="account-list" id="login-account-list"></div>
+            <div style="margin-top:12px;font-size:0.78rem;color:var(--t3);">Click an account to select it. In your app, you'd show this as a chooser.</div>
+          </div>
+          <div class="result" id="login-result"><div class="result-label">Response</div><div class="result-body" id="login-body"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const API = 'https://emltechstudio-inet-v2.hf.space';
+let devToken = localStorage.getItem('inet_dev_token') || '';
+let devEmail = localStorage.getItem('inet_dev_email') || '';
+let devCompany = localStorage.getItem('inet_dev_company') || '';
+
+window.addEventListener('load', () => { if (devToken) enterPortal(); });
+
+function enterPortal() {
+  document.getElementById('authWrap').style.display = 'none';
+  document.getElementById('portalWrap').style.display = 'block';
+  document.getElementById('sb-company').textContent = devCompany || 'My App';
+  document.getElementById('sb-email').textContent = devEmail || '';
+  loadDashboard();
+}
+
+function doLogout() {
+  localStorage.removeItem('inet_dev_token');
+  localStorage.removeItem('inet_dev_email');
+  localStorage.removeItem('inet_dev_company');
+  devToken = ''; devEmail = ''; devCompany = '';
+  document.getElementById('authWrap').style.display = 'flex';
+  document.getElementById('portalWrap').style.display = 'none';
+}
+
+function switchAuth(view) {
+  document.getElementById('viewLogin').style.display = view === 'login' ? 'block' : 'none';
+  document.getElementById('viewSignup').style.display = view === 'signup' ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('li-email').value.trim();
+  const pass = document.getElementById('li-pass').value;
+  if (!email || !pass) { alert('Fill in both fields.'); return; }
+  const btn = document.getElementById('li-btn');
+  btn.disabled = true; btn.textContent = 'Logging in...';
+  try {
+    const r = await fetch(API + '/developer/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email, password: pass }) });
+    const d = await r.json();
+    if (d.token) {
+      devToken = d.token; devEmail = email; devCompany = d.company_name || '';
+      localStorage.setItem('inet_dev_token', devToken);
+      localStorage.setItem('inet_dev_email', devEmail);
+      localStorage.setItem('inet_dev_company', devCompany);
+      enterPortal();
+    } else { showRes('li', d, false); }
+  } catch(e) { showRes('li', {error:e.message}, false); }
+  finally { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:currentColor"><path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/></svg> Log In'; }
+}
+
+async function doSignup() {
+  const email = document.getElementById('su-email').value.trim();
+  const company = document.getElementById('su-company').value.trim();
+  const pass = document.getElementById('su-pass').value;
+  if (!email || !company || !pass) { alert('Fill in all fields.'); return; }
+  const btn = document.getElementById('su-btn');
+  btn.disabled = true; btn.textContent = 'Creating...';
+  try {
+    const r = await fetch(API + '/developer/signup', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email, company_name: company, password: pass }) });
+    const d = await r.json();
+    showRes('su', d, !!d.developer_id);
+    if (d.developer_id) { setTimeout(() => { switchAuth('login'); document.getElementById('li-email').value = email; }, 1200); }
+  } catch(e) { showRes('su', {error:e.message}, false); }
+  finally { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Create Account'; }
+}
+
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  else { document.querySelectorAll('.nav-link').forEach(n => { if (n.getAttribute('onclick')?.includes("'"+id+"'") || n.getAttribute('onclick')?.includes('"'+id+'"')) n.classList.add('active'); }); }
+}
+
+function switchTab(id, el) {
+  ['otp2','msg2','verify2','login2'].forEach(t => { document.getElementById('itab-' + t).style.display = t === id ? 'block' : 'none'; });
+  document.querySelectorAll('.itab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+async function loadDashboard() {
+  try {
+    const r = await fetch(API + '/developer/keys', { headers: { 'X-Developer-Token': devToken } });
+    const d = await r.json();
+    const keys = d.api_keys || [];
+    document.getElementById('stat-keys').textContent = keys.length;
+    document.getElementById('stat-active').textContent = keys.filter(k => !k.revoked).length;
+  } catch {}
+  try {
+    const r = await fetch(API + '/developer/analytics', { headers: { 'X-Developer-Token': devToken } });
+    const d = await r.json();
+    document.getElementById('stat-calls').textContent = d.total_api_calls || 0;
+  } catch { document.getElementById('stat-calls').textContent = '0'; }
+}
+
+async function createKey() {
+  const name = document.getElementById('ck-name').value.trim() || 'My App';
+  const expires = parseInt(document.getElementById('ck-expires').value) || 365;
+  const btn = document.getElementById('ck-btn');
+  btn.disabled = true; btn.textContent = 'Generating...';
+  try {
+    const r = await fetch(API + '/developer/keys/create', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Developer-Token': devToken }, body: JSON.stringify({ name, expires_days: expires }) });
+    const d = await r.json();
+    if (d.api_key) {
+      document.getElementById('ck-key-val').textContent = d.api_key;
+      document.getElementById('ck-reveal').style.display = 'block';
+      document.getElementById('sb-key').value = d.api_key;
+      loadDashboard();
+    } else { alert(JSON.stringify(d)); }
+  } catch(e) { alert(e.message); }
+  finally { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:currentColor"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg> Generate API Key'; }
+}
+
+async function loadKeys() {
+  try {
+    const r = await fetch(API + '/developer/keys', { headers: { 'X-Developer-Token': devToken } });
+    const d = await r.json();
+    const keys = d.api_keys || [];
+    const el = document.getElementById('keys-list');
+    if (!keys.length) { el.innerHTML = '<div style="color:var(--t2);font-size:0.8rem">No keys yet.</div>'; return; }
+    el.innerHTML = keys.map(k => `<div class="key-item"><div class="key-icon"><svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg></div><div class="key-info"><div class="key-name">${k.name || 'Unnamed'}</div><div class="key-preview">...${k.key?.slice(-12) || '????????????'} &nbsp; <span class="pill ${k.revoked ? 'pill-red' : 'pill-green'}"><span class="pill-dot"></span>${k.revoked ? 'revoked' : 'active'}</span></div></div><div class="key-meta">${k.expires_at ? 'Expires ' + new Date(k.expires_at * 1000).toLocaleDateString() : '-'}</div></div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+function getKey() {
+  const k = document.getElementById('sb-key').value.trim();
+  if (!k) { alert('Paste your API key first.'); return null; }
+  return k;
+}
+
+async function sandboxOtp() {
+  const key = getKey(); if (!key) return;
+  const pin = document.getElementById('otp-pin').value.trim();
+  if (pin.length !== 6) { alert('Enter a valid 6-digit PIN.'); return; }
+  const btn = document.getElementById('otp-btn');
+  btn.disabled = true; btn.textContent = 'Sending...';
+  try {
+    const r = await fetch(API + '/api/otp/send', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': key }, body: JSON.stringify({ net_number: pin }) });
+    const d = await r.json();
+    showRes('otp', d, d.status === 'otp_sent' || !!d.otp);
+    document.getElementById('vfy-pin').value = pin;
+  } catch(e) { showRes('otp', {error:e.message}, false); }
+  finally { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Send OTP'; }
+}
+
+async function sandboxMsg() {
+  const key = getKey(); if (!key) return;
+  const pin = document.getElementById('msg-pin').value.trim();
+  const type = document.getElementById('msg-type').value;
+  const content = document.getElementById('msg-content').value.trim();
+  if (pin.length !== 6) { alert('Enter a valid 6-digit PIN.'); return; }
+  if (!content) { alert('Content is required.'); return; }
+  const btn = document.getElementById('msg-btn');
+  btn.disabled = true; btn.textContent = 'Sending...';
+  try {
+    const r = await fetch(API + '/api/send', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': key }, body: JSON.stringify({ net_number: pin, content, type, developer_name: devCompany || 'Test App' }) });
+    const d = await r.json();
+    showRes('msg', d, d.status === 'sent');
+  } catch(e) { showRes('msg', {error:e.message}, false); }
+  finally { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> Send Message'; }
+}
+
+async function sandboxVerify() {
+  const pin = document.getElementById('vfy-pin').value.trim();
+  const code = document.getElementById('vfy-code').value.trim();
+  if (!pin || !code) { alert('Fill in both fields.'); return; }
+  const btn = document.getElementById('vfy-btn');
+  btn.disabled = true; btn.textContent = 'Verifying...';
+  try {
+    const r = await fetch(`${API}/api/otp/verify?net_number=${pin}&otp=${code}`, { method: 'POST' });
+    const d = await r.json();
+    showRes('vfy', d, !!d.valid);
+  } catch(e) { showRes('vfy', {error:e.message}, false); }
+  finally { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Verify'; }
+}
+
+async function sandboxLoginWithInet() {
+  const key = getKey(); if (!key) return;
+  let fp = document.getElementById('login-fp').value.trim();
+  if (!fp) {
+    const components = [navigator.userAgent, navigator.language, screen.width + 'x' + screen.height, navigator.hardwareConcurrency || ''];
+    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(components.join('::')));
+    fp = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    document.getElementById('login-fp').value = fp;
+  }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Looking up...';
+  try {
+    const r = await fetch(API + '/api/login-with-inet', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': key }, body: JSON.stringify({ fingerprint: fp }) });
+    const d = await r.json();
+    showRes('login', d, !!d.accounts);
+    if (d.accounts && d.accounts.length > 0) {
+      const list = document.getElementById('login-account-list');
+      list.innerHTML = '';
+      d.accounts.forEach((acc) => {
+        const div = document.createElement('div');
+        div.className = 'account-item';
+        div.innerHTML = `<div class="account-avatar">${acc.net_number.slice(0,2)}</div><div class="account-info"><div class="account-pin">${acc.net_number}</div><div class="account-meta">PIN - Created ${new Date(acc.created_at).toLocaleDateString()}</div></div>`;
+        div.onclick = () => { document.querySelectorAll('.account-item').forEach(el => el.classList.remove('selected')); div.classList.add('selected'); alert(`Selected PIN: ${acc.net_number}\n\nIn your app, you'd now send an OTP to this PIN for verification.`); };
+        list.appendChild(div);
+      });
+      document.getElementById('login-accounts').style.display = 'block';
+    } else { document.getElementById('login-accounts').style.display = 'none'; }
+  } catch(e) { showRes('login', {error:e.message}, false); document.getElementById('login-accounts').style.display = 'none'; }
+  finally { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Look Up Accounts'; }
+}
+
+function showRes(id, data, ok) {
+  const box = document.getElementById(id + '-result');
+  const body = document.getElementById(id + '-body');
+  box.classList.add('show');
+  body.className = 'result-body ' + (ok ? 'ok' : 'err');
+  body.textContent = JSON.stringify(data, null, 2);
+}
+
+function copyText(text, btn) {
+  navigator.clipboard?.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+
+function copyCode(btn) {
+  const pre = btn.closest('.code-wrap').querySelector('pre');
+  navigator.clipboard?.writeText(pre.innerText).then(() => {
+    btn.textContent = 'copied!';
+    setTimeout(() => btn.textContent = 'copy', 2000);
+  });
+}
+</script>
+</body>
+</html>
