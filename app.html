@@ -2770,17 +2770,7 @@ a{text-decoration:none;color:inherit}
   </div>
 </div>
 
-<!-- App logic - must load before any onclick handlers fire -->
 <script src="app.js"></script>
-
-<!-- Safety: if app.js failed to load, show error -->
-<script>
-if (typeof App === 'undefined') {
-  document.addEventListener('DOMContentLoaded', () => {
-    document.body.innerHTML = '<div style="padding:40px;text-align:center;font-family:monospace;color:#e63946"><h2>Error loading app</h2><p>app.js failed to load. Check console and ensure app.js is in the same directory as app.html</p></div>';
-  });
-}
-</script>
 </div><!-- end #root -->
 </body>
 </html>
