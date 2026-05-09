@@ -1,8 +1,14 @@
+'use strict';
 
 /* ══════════════════════════════════════════════════
    iNet v2 · app.js
    EML Tech Studio
 ══════════════════════════════════════════════════ */
+
+// Prevent "App is not defined" errors before script finishes loading
+if (typeof window.App === 'undefined') {
+  window.App = {};
+}
 
 const API = 'https://emltechstudio-inet-v2.hf.space';
 const WS_URL = 'wss://emltechstudio-inet-v2.hf.space/ws';
@@ -19,8 +25,8 @@ const STICKER_PACKS = {
   '😊': ['😊','😂','🥹','😍','🤩','😎','🥳','😭','😤','🥺','😏','🤔','😴','🤯','🫡'],
   '🎉': ['🎉','🎊','🎈','🔥','💯','✨','⚡','🌟','💫','🎯','🏆','👑','🚀','💪','🎁'],
   '❤️': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💖','💝','💔','❣️','💌','🫶','🤝'],
-  '🔥': ['👍','👎','👋','🤜','🤛','👏','🙌','🤦','🤷','💁','🙅','🙆','🫠','🫢','🫣'],
- };
+  '🔥': ['👍','👎','👋','🤜','🤛','👏','🙌','🤦','🤷','💁','🙅','🙆','🫠','🫢','🫣']
+};
 
 /* ══════════════════════════════════════════════════
    STATE
@@ -514,9 +520,8 @@ const WS = {
         break;
 
       case 'otp':
-        const otpPayload = msg.payload || msg;
-        UI.$('toast-otp-code').textContent = otpPayload.otp || otpPayload.code || '000000';
-        UI.$('toast-otp-from').textContent = `From: ${otpPayload.developer_name || otpPayload.from || 'Service'}`;
+        UI.$('toast-otp-code').textContent = msg.code;
+        UI.$('toast-otp-from').textContent = `From: ${msg.from || 'Service'}`;
         UI.$('otp-toast').classList.add('show');
         setTimeout(() => UI.$('otp-toast').classList.remove('show'), 15000);
         break;
@@ -1046,6 +1051,8 @@ const Render = {
       list.appendChild(el);
     });
   },
+
+  tabBadges() {
     const totalUnread = Object.values(State.chats).reduce((acc, c) => acc + (c.unread || 0), 0);
     const chatBadge = UI.$('badge-chats');
     if (totalUnread > 0) {
@@ -1690,7 +1697,6 @@ const App = {
     try {
       const { net_number } = await SIM.create(pass);
       await SIM.save();
-      await this.registerFingerprint(net_number);
 
       // Cache session so no password on next open this session
       sessionStorage.setItem('inet_sim', JSON.stringify(State.sim));
@@ -1720,7 +1726,6 @@ const App = {
 
       await SIM.activate(simData, pass);
       await SIM.save();
-      await this.registerFingerprint(simData.net_number);
 
       // Cache in session so password not needed until browser restart
       sessionStorage.setItem('inet_sim', JSON.stringify(State.sim));
@@ -1738,29 +1743,6 @@ const App = {
   },
 
   downloadSim() { SIM.exportFile(); },
-
-  async registerFingerprint(net_number) {
-    try {
-      const fp = await this.getDeviceFingerprint();
-      await fetch(`${API}/sim/register-fingerprint`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fingerprint: fp, net_number })
-      });
-    } catch (e) { console.warn('Fingerprint registration failed:', e); }
-  },
-
-  async getDeviceFingerprint() {
-    const components = [
-      navigator.userAgent, navigator.language,
-      screen.width + 'x' + screen.height,
-      screen.colorDepth, new Date().getTimezoneOffset(),
-      navigator.hardwareConcurrency || '', navigator.deviceMemory || ''
-    ];
-    const text = components.join('::');
-    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-  },
 
   async changeSimPassword() {
     const newPass = prompt('Enter new SIM password (min 6 chars):');
@@ -2421,7 +2403,9 @@ document.addEventListener('visibilitychange', () => {
 
 // Close sheets on outside tap
 document.addEventListener('click', (ev) => {
-  if (ev.target === UI.$('media-sheet')?.parentElement) App.closeMediaSheet();
+  if (typeof App !== 'undefined' && App.closeMediaSheet && ev.target === UI.$('media-sheet')?.parentElement) {
+    App.closeMediaSheet();
+  }
 });
 
 window.App = App;
