@@ -3,177 +3,314 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#7B1535">
 <title>Install iNet</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<meta name="description" content="Install iNet on your device — works on Android, iPhone, and desktop. No app store required.">
+<meta name="theme-color" content="#e63946">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--wine:#7B1535;--wine-deep:#5C0F28;--wine-soft:#9E1F45;--wine-pale:#F5E8EC;--wine-mist:#FAF3F5;--white:#FFFFFF;--bg:#F7F2F4;--surface:#FFFFFF;--border:#EDE0E4;--text:#180910;--text-2:#7A5865;--text-3:#B99AAA;--green:#22C55E;--blue:#3B82F6;--shadow-sm:0 1px 4px rgba(123,21,53,.08);--shadow-md:0 4px 16px rgba(123,21,53,.12);--shadow-lg:0 12px 40px rgba(123,21,53,.18);--r-sm:10px;--r-md:16px;--r-lg:22px;--r-xl:28px;--font-d:'Sora',sans-serif;--font-b:'DM Sans',sans-serif;}
-html{scroll-behavior:smooth}body{font-family:var(--font-b);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
-.header{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 20px}
-.header-inner{max-width:640px;margin:0 auto;height:60px;display:flex;align-items:center;gap:12px}
-.header-logo{width:36px;height:36px;background:var(--wine);border-radius:10px;display:flex;align-items:center;justify-content:center}
-.header-logo svg{width:20px;height:20px;color:#fff}
-.header-title{font-family:var(--font-d);font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.3px}
-.header-title span{color:var(--text-3);font-weight:400;font-size:13px;margin-left:4px}
-.header-back{margin-left:auto;color:var(--wine);font-size:14px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:6px}
-.hero{padding:100px 24px 40px;text-align:center;max-width:640px;margin:0 auto}
-.hero-icon{width:80px;height:80px;background:var(--wine);border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:var(--shadow-lg)}
-.hero-icon svg{width:42px;height:42px;color:#fff}
-.hero h1{font-family:var(--font-d);font-size:32px;font-weight:800;color:var(--text);letter-spacing:-1px;margin-bottom:8px}
-.hero p{font-size:16px;color:var(--text-2);max-width:400px;margin:0 auto 24px}
-.hero-badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:24px}
-.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:var(--wine-pale);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;color:var(--wine)}
-.badge svg{width:14px;height:14px}
-.cta-wrap{display:flex;flex-direction:column;gap:12px;align-items:center;margin-bottom:40px}
-.btn-primary{width:100%;max-width:320px;height:54px;background:var(--wine);color:#fff;font-family:var(--font-d);font-size:15px;font-weight:600;border:none;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(123,21,53,.3);cursor:pointer;text-decoration:none;transition:all .15s}
-.btn-primary:active{transform:scale(.98);box-shadow:none}
-.btn-primary svg{width:20px;height:20px}
-.btn-ghost{width:100%;max-width:320px;height:48px;background:transparent;color:var(--text-2);font-family:var(--font-d);font-size:14px;font-weight:600;border:1.5px solid var(--border);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none;transition:all .15s}
-.btn-ghost:active{background:var(--wine-mist)}
-.detect-banner{background:var(--wine-pale);border:1.5px dashed var(--wine);border-radius:var(--r-md);padding:16px 20px;margin:0 auto 32px;max-width:640px;text-align:center}
-.detect-banner h3{font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--wine);margin-bottom:4px}
-.detect-banner p{font-size:13px;color:var(--text-2)}
-.steps-section{max-width:640px;margin:0 auto;padding:0 24px 40px}
-.steps-title{font-family:var(--font-d);font-size:20px;font-weight:700;margin-bottom:20px;text-align:center}
-.platform-tabs{display:flex;gap:4px;background:var(--wine-mist);border-radius:var(--r-md);padding:4px;margin-bottom:24px}
-.platform-tab{flex:1;padding:10px;text-align:center;border-radius:12px;font-size:14px;font-weight:600;color:var(--text-2);cursor:pointer;transition:all .15s;border:none;background:transparent;font-family:var(--font-b)}
-.platform-tab.active{background:var(--white);color:var(--wine);box-shadow:var(--shadow-sm)}
-.step-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:12px;display:flex;gap:16px;align-items:flex-start;transition:all .15s}
-.step-card:hover{border-color:var(--wine);box-shadow:var(--shadow-sm)}
-.step-num{width:36px;height:36px;border-radius:50%;background:var(--wine-pale);border:2px solid var(--wine);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:14px;font-weight:700;color:var(--wine);flex-shrink:0}
-.step-content{flex:1}
-.step-content h4{font-family:var(--font-d);font-size:15px;font-weight:700;margin-bottom:4px}
-.step-content p{font-size:13px;color:var(--text-2);line-height:1.6}
-.platform-content{display:none}.platform-content.active{display:block}
-.tips-section{max-width:640px;margin:0 auto;padding:0 24px 40px}
-.tips-card{background:linear-gradient(135deg,var(--wine-deep),var(--wine));border-radius:var(--r-lg);padding:24px;color:#fff}
-.tips-card h3{font-family:var(--font-d);font-size:18px;font-weight:700;margin-bottom:12px}
-.tips-card ul{list-style:none;display:flex;flex-direction:column;gap:10px}
-.tips-card li{display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.5}
-.tips-card li svg{width:18px;height:18px;flex-shrink:0;margin-top:1px}
-.footer{text-align:center;padding:24px;color:var(--text-3);font-size:12px;border-top:1px solid var(--border);max-width:640px;margin:0 auto}
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.hero,.step-card,.tips-card{animation:fadeUp .5s ease-out both}
-.step-card:nth-child(2){animation-delay:.1s}.step-card:nth-child(3){animation-delay:.2s}.step-card:nth-child(4){animation-delay:.3s}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0e0e10;--surface:#18181c;--surface2:#222228;--surface3:#2a2a32;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --accent:#e63946;--accent-dim:rgba(230,57,70,0.12);--accent-glow:rgba(230,57,70,0.28);
+  --green:#22c55e;--green-dim:rgba(34,197,94,0.1);
+  --blue:#3b82f6;--purple:#8b5cf6;
+  --text:#f4f4f6;--text2:#a0a0b0;--text3:#606070;
+  --radius:16px;--radius-sm:10px;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html{font-size:16px;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+body{
+  background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;
+  min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;
+}
+a{text-decoration:none;color:inherit}
+
+/* ── TOP BAR ── */
+.topbar{
+  padding:calc(var(--safe-top) + 14px) 20px 14px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);
+  background:rgba(14,14,16,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  position:sticky;top:0;z-index:50;
+}
+.logo{
+  width:34px;height:34px;background:var(--accent);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-weight:500;font-size:0.85rem;color:#fff;
+  box-shadow:0 0 14px var(--accent-glow);flex-shrink:0;
+}
+.logo-name{font-weight:700;font-size:0.95rem;flex:1}
+.back-link{
+  font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text3);
+  padding:7px 12px;border-radius:20px;border:1px solid var(--border);transition:all .15s;
+  display:flex;align-items:center;gap:4px;
+}
+.back-link:hover{color:var(--text2);border-color:var(--border2)}
+
+/* ── MAIN ── */
+main{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:40px 20px calc(40px + var(--safe-bottom));
+  max-width:480px;margin:0 auto;width:100%;gap:20px;
+}
+
+/* ── APP HERO ── */
+.app-hero{text-align:center}
+.app-icon{
+  width:88px;height:88px;background:var(--accent);border-radius:22px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:2rem;color:#fff;font-weight:500;
+  box-shadow:0 0 36px var(--accent-glow);margin:0 auto 20px;
+}
+.app-hero h1{font-size:1.9rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+.app-hero h1 span{color:var(--accent)}
+.app-hero p{font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text2);line-height:1.8}
+
+/* ── CARDS ── */
+.card{
+  width:100%;background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--radius);padding:22px;display:flex;flex-direction:column;gap:16px;
+}
+.card-title{font-weight:700;font-size:0.9rem;color:var(--text)}
+
+/* ── INSTALL BUTTON ── */
+#android-section{display:none}
+.btn-install{
+  width:100%;padding:15px;background:var(--accent);color:#fff;border:none;
+  font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;
+  border-radius:var(--radius-sm);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 20px var(--accent-glow);transition:all .2s;
+}
+.btn-install:hover{transform:translateY(-2px);box-shadow:0 8px 28px var(--accent-glow)}
+.btn-install:active{transform:scale(0.97)}
+.btn-install:disabled{opacity:0.45;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-install svg{flex-shrink:0}
+
+.installed-badge{
+  display:none;align-items:center;justify-content:center;gap:8px;
+  background:var(--green-dim);border:1px solid rgba(34,197,94,0.2);
+  padding:13px;border-radius:var(--radius-sm);
+  font-weight:700;font-size:0.88rem;color:var(--green);
+}
+.installed-badge svg{width:18px;height:18px;stroke:var(--green);fill:none;flex-shrink:0}
+
+/* ── IOS STEPS ── */
+#ios-section{display:none}
+.ios-steps{display:flex;flex-direction:column;gap:10px}
+.ios-step{
+  display:flex;align-items:flex-start;gap:14px;
+  background:var(--surface2);border-radius:var(--radius-sm);padding:14px;
+}
+.ios-num{
+  width:26px;height:26px;border-radius:50%;flex-shrink:0;margin-top:1px;
+  background:var(--accent-dim);border:1px solid rgba(230,57,70,0.25);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:0.68rem;font-weight:500;color:var(--accent);
+}
+.ios-text{font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text2);line-height:1.75}
+.ios-text strong{color:var(--text)}
+.ios-safari-note{
+  font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text3);
+  line-height:1.6;
+}
+.ios-safari-note strong{color:var(--text2)}
+
+/* ── OPEN IN BROWSER ── */
+.btn-open{
+  width:100%;padding:14px;background:transparent;color:var(--text);
+  border:1px solid var(--border2);border-radius:var(--radius-sm);
+  font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all .15s;
+}
+.btn-open:hover{background:var(--surface);border-color:rgba(255,255,255,0.2)}
+
+/* ── MINI FEATURES ── */
+.mini-features{
+  width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+.mf{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:14px;display:flex;align-items:center;gap:10px;
+}
+.mf-icon{width:20px;height:20px;flex-shrink:0;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round}
+.mf-text{font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text2);line-height:1.5}
+
+/* ── FOOTER ── */
+footer{
+  text-align:center;padding:20px;padding-bottom:calc(20px + var(--safe-bottom));
+  font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text3);
+}
+footer a{color:var(--text3);transition:color .15s}
+footer a:hover{color:var(--text2)}
 </style>
 </head>
 <body>
 
-<header class="header">
-  <div class="header-inner">
-    <div class="header-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M1 6C5.5 1.5 18.5 1.5 23 6"/><path d="M5 10c2.5-2.5 11.5-2.5 14 0"/>
-        <path d="M9 14c1-1 5-1 6 0"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/>
-      </svg>
-    </div>
-    <div class="header-title">iNet <span>Install</span></div>
-    <a href="/" class="header-back">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-      Back
-    </a>
-  </div>
-</header>
-
-<section class="hero">
-  <div class="hero-icon">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 5v14M16 5v14"/>
-    </svg>
-  </div>
-  <h1>Install iNet</h1>
-  <p>Add iNet to your home screen for the best experience. Works like a native app - no app store needed.</p>
-  <div class="hero-badges">
-    <div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>End-to-End Encrypted</div>
-    <div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Instant Install</div>
-    <div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>No Tracking</div>
-  </div>
-  <div class="cta-wrap">
-    <a href="app.html" class="btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Open iNet Web App</a>
-    <a href="dev.html" class="btn-ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>Developer Portal</a>
-  </div>
-</section>
-
-<div class="detect-banner" id="detect-banner">
-  <h3 id="detect-title">Detecting your device...</h3>
-  <p id="detect-desc">We will show you the right steps for your phone.</p>
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="logo">iN</div>
+  <div class="logo-name">iNet</div>
+  <a href="index.html" class="back-link">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--text3)"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    Home
+  </a>
 </div>
 
-<section class="steps-section">
-  <h2 class="steps-title">How to Install</h2>
-  <div class="platform-tabs">
-    <button class="platform-tab active" onclick="showPlatform('ios',this)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.21-1.98 1.08-3.11-1.05.05-2.31.72-3.06 1.64-.68.83-1.27 2.17-1.11 3.29 1.18.09 2.38-.59 3.09-1.82"/></svg>
-      iPhone / iPad
-    </button>
-    <button class="platform-tab" onclick="showPlatform('android',this)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:4px"><path d="M17.523 15.341c-.5 0-.904.405-.904.906 0 .5.404.905.904.905.5 0 .905-.405.905-.905 0-.501-.405-.906-.905-.906zm-11.046 0c-.5 0-.906.405-.906.906 0 .5.405.905.906.905.5 0 .905-.405.905-.905 0-.501-.405-.906-.905-.906zM18.6 5.941c-.073-.134-.232-.18-.366-.107l-1.774 1.003c-1.027-.802-2.319-1.274-3.725-1.274h-.006c-.107 0-.212.005-.318.013-.11-.008-.22-.013-.332-.013-1.406 0-2.698.472-3.725 1.274L6.58 5.834c-.134-.073-.293-.027-.366.107-.073.134-.027.293.107.366l1.774 1.003c-1.335 1.27-2.175 3.054-2.175 5.033v5.69h12.768v-5.69c0-1.979-.84-3.763-2.175-5.033l1.774-1.003c.134-.073.18-.232.107-.366-.036-.066-.1-.1-.164-.1-.036 0-.073.009-.11.027z"/></svg>
-      Android
-    </button>
-    <button class="platform-tab" onclick="showPlatform('desktop',this)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-      Desktop
-    </button>
+<!-- ── MAIN ── -->
+<main>
+
+  <!-- APP HERO -->
+  <div class="app-hero">
+    <div class="app-icon">iN</div>
+    <h1>Install <span>iNet</span></h1>
+    <p>Add to your home screen for the full app experience.<br>Works offline &middot; No app store &middot; Always free.</p>
   </div>
 
-  <div class="platform-content active" id="platform-ios">
-    <div class="step-card"><div class="step-num">1</div><div class="step-content"><h4>Open Safari</h4><p>iNet works best in Safari on iOS. Make sure you are using Safari, not Chrome or another browser.</p></div></div>
-    <div class="step-card"><div class="step-num">2</div><div class="step-content"><h4>Tap the Share button</h4><p>Look for the share icon <span style="display:inline-flex;align-items:center;gap:2px;background:#007AFF;color:#fff;padding:2px 8px;border-radius:8px;font-size:12px;font-weight:600"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> Share</span> at the bottom of the screen (or top on iPad).</p></div></div>
-    <div class="step-card"><div class="step-num">3</div><div class="step-content"><h4>Scroll and tap "Add to Home Screen"</h4><p>Scroll down in the share sheet until you see "Add to Home Screen" with a plus icon. Tap it.</p></div></div>
-    <div class="step-card"><div class="step-num">4</div><div class="step-content"><h4>Tap "Add"</h4><p>You can edit the name if you want. Then tap "Add" in the top right. iNet will appear on your home screen like any other app.</p></div></div>
+  <!-- ANDROID / DESKTOP -->
+  <div class="card" id="android-section">
+    <div class="card-title" id="install-card-title">Install on your device</div>
+    <div id="install-btn-wrap">
+      <button class="btn-install" id="install-btn" onclick="triggerInstall()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Add to Home Screen
+      </button>
+    </div>
+    <div class="installed-badge" id="installed-msg">
+      <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      iNet is already installed
+    </div>
   </div>
 
-  <div class="platform-content" id="platform-android">
-    <div class="step-card"><div class="step-num">1</div><div class="step-content"><h4>Open Chrome</h4><p>iNet works best in Chrome on Android. Make sure you are using Chrome.</p></div></div>
-    <div class="step-card"><div class="step-num">2</div><div class="step-content"><h4>Tap the menu (three dots)</h4><p>Look for the three-dot menu icon in the top right corner of Chrome.</p></div></div>
-    <div class="step-card"><div class="step-num">3</div><div class="step-content"><h4>Tap "Add to Home screen" or "Install app"</h4><p>You might also see "Install iNet" as a banner at the bottom of the screen - tap that instead for the easiest install.</p></div></div>
-    <div class="step-card"><div class="step-num">4</div><div class="step-content"><h4>Tap "Add" or "Install"</h4><p>Confirm the installation. iNet will appear on your home screen and in your app drawer, just like any app from the Play Store.</p></div></div>
+  <!-- IOS -->
+  <div class="card" id="ios-section">
+    <div class="card-title">Install on iPhone / iPad</div>
+    <div class="ios-steps">
+      <div class="ios-step">
+        <div class="ios-num">1</div>
+        <div class="ios-text">
+          Tap the <strong>Share</strong> button
+          <svg style="display:inline-block;vertical-align:middle;margin:0 3px" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e63946" stroke-width="2" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          at the bottom of <strong>Safari</strong>
+        </div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-num">2</div>
+        <div class="ios-text">Scroll down and tap <strong>"Add to Home Screen"</strong></div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-num">3</div>
+        <div class="ios-text">Tap <strong>Add</strong> in the top-right corner &mdash; done.</div>
+      </div>
+    </div>
+    <p class="ios-safari-note">Must be opened in <strong>Safari</strong> for this to work on iOS. Chrome and Firefox do not support PWA installation on iPhone.</p>
   </div>
 
-  <div class="platform-content" id="platform-desktop">
-    <div class="step-card"><div class="step-num">1</div><div class="step-content"><h4>Open Chrome, Edge, or Safari</h4><p>iNet works in any modern browser on macOS, Windows, or Linux.</p></div></div>
-    <div class="step-card"><div class="step-num">2</div><div class="step-content"><h4>Look for the install icon</h4><p>In Chrome or Edge, look for an install icon in the address bar (usually looks like a computer with a down arrow). Click it.</p></div></div>
-    <div class="step-card"><div class="step-num">3</div><div class="step-content"><h4>Click "Install"</h4><p>Confirm the installation. iNet will open in its own window, separate from your browser, and appear in your applications folder or start menu.</p></div></div>
-  </div>
-</section>
+  <!-- OPEN IN BROWSER -->
+  <a href="app.html" class="btn-open">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
+    Open App in Browser
+  </a>
 
-<section class="tips-section">
-  <div class="tips-card">
-    <h3>Why install iNet?</h3>
-    <ul>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg><span><strong>Instant launch</strong> - Tap the icon and iNet opens immediately, no browser chrome in the way.</span></li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span><strong>Native feel</strong> - Full-screen experience with push notifications, just like WhatsApp or Signal.</span></li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span><strong>Always available</strong> - Works offline for reading past messages. Auto-reconnects when you are back online.</span></li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span><strong>Private by design</strong> - Your SIM file stays on your device. Nothing is stored on our servers.</span></li>
-    </ul>
+  <!-- MINI FEATURES -->
+  <div class="mini-features">
+    <div class="mf">
+      <svg class="mf-icon" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+      <div class="mf-text">Works offline</div>
+    </div>
+    <div class="mf">
+      <svg class="mf-icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <div class="mf-text">100% private</div>
+    </div>
+    <div class="mf">
+      <svg class="mf-icon" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      <div class="mf-text">No app store</div>
+    </div>
+    <div class="mf">
+      <svg class="mf-icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <div class="mf-text">Always free</div>
+    </div>
   </div>
-</section>
 
-<footer class="footer">
-  <p>iNet v2 - EML Tech Studio - No data collected - No logs kept</p>
+</main>
+
+<footer>
+  iNet by <a href="https://emltechstudio.site">EML Tech Studio</a> &middot; emltechstudio@gmail.com
 </footer>
 
 <script>
-function detectPlatform() {
-  const ua = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-  const isAndroid = /Android/.test(ua);
-  const title = document.getElementById('detect-title');
-  const desc = document.getElementById('detect-desc');
-  if (isIOS) { title.textContent = 'iPhone or iPad detected'; desc.textContent = 'Follow the iOS steps below to add iNet to your home screen.'; showPlatform('ios', document.querySelector('.platform-tab')); }
-  else if (isAndroid) { title.textContent = 'Android device detected'; desc.textContent = 'Follow the Android steps below to install iNet.'; showPlatform('android', document.querySelectorAll('.platform-tab')[1]); }
-  else { title.textContent = 'Desktop browser detected'; desc.textContent = 'Follow the desktop steps below to install iNet.'; showPlatform('desktop', document.querySelectorAll('.platform-tab')[2]); }
-}
-function showPlatform(platform, btn) {
-  document.querySelectorAll('.platform-content').forEach(el => el.classList.remove('active'));
-  document.getElementById('platform-' + platform).classList.add('active');
-  document.querySelectorAll('.platform-tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-}
-detectPlatform();
-</script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 
+let dP = null;
+
+const ua           = navigator.userAgent.toLowerCase();
+const isIOS        = /iphone|ipad|ipod/.test(ua);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                     || window.navigator.standalone === true;
+
+// Android/desktop: catch the install prompt
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  dP = e;
+  showAndroid();
+});
+
+function showAndroid() {
+  document.getElementById('android-section').style.display = 'flex';
+  document.getElementById('ios-section').style.display     = 'none';
+}
+function showIOS() {
+  document.getElementById('ios-section').style.display     = 'flex';
+  document.getElementById('android-section').style.display = 'none';
+}
+
+async function triggerInstall() {
+  if (!dP) return;
+  const btn = document.getElementById('install-btn');
+  btn.disabled = true;
+  dP.prompt();
+  const { outcome } = await dP.userChoice;
+  dP = null;
+  if (outcome === 'accepted') {
+    document.getElementById('install-btn-wrap').style.display = 'none';
+    document.getElementById('installed-msg').style.display    = 'flex';
+    document.getElementById('install-card-title').textContent = 'Installation complete!';
+  } else {
+    btn.disabled = false;
+  }
+}
+
+// On load — decide what to show
+window.addEventListener('load', () => {
+  if (isStandalone) {
+    document.getElementById('android-section').style.display = 'flex';
+    document.getElementById('install-btn-wrap').style.display = 'none';
+    document.getElementById('installed-msg').style.display    = 'flex';
+    document.getElementById('install-card-title').textContent = 'Already installed!';
+    return;
+  }
+  if (isIOS) {
+    showIOS();
+    return;
+  }
+  // Android/Desktop: wait up to 2s for beforeinstallprompt
+  setTimeout(() => {
+    if (!dP && !isStandalone) {
+      // Show the card with a disabled button as fallback
+      document.getElementById('android-section').style.display = 'flex';
+      const btn = document.getElementById('install-btn');
+      btn.textContent = 'May already be installed';
+      btn.disabled    = true;
+    }
+  }, 2000);
+});
+</script>
 </body>
 </html>
