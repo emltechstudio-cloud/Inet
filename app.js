@@ -1,33 +1,34 @@
 'use strict';
 
 /* ══════════════════════════════════════════════════
- iNet v2 · app.js (PATCHED VERSION)
+ iNet v2 · app.js (FULLY PATCHED)
  EML Tech Studio
 
- PATCHES APPLIED:
- 1. Fixed media rendering (images, videos, voice, files) — uses msg.media as src
- 2. Added linkify() for clickable URLs in text
- 3. Fixed group call signaling routing (room vs 1-on-1)
- 4. Fixed GroupCall.handleJoin so only existing members initiate to new joiners
- 5. Added GroupCall.handleOffer / handleAnswer / handleIce
- 6. Added ICE gathering wait before sending offers (fixes call connectivity)
- 7. Fixed voice note button exposure + playVoiceNote leaks
- 8. Fixed URL room auto-join to wait for WebSocket ready
- 9. Fixed message timestamp handling for offline delivery
- 10. Added file download handler
+ PATCHES:
+ 1. Device ID stored in localStorage (NOT in SIM file)
+ 2. SIM file only contains: net_number, contacts, created_at
+ 3. Eject does NOT delete device_id from localStorage
+ 4. Backend accepts ANY device_id — no validation
+ 5. Fixed media rendering (images, videos, voice, files)
+ 6. Added linkify() for clickable URLs
+ 7. Fixed group call signaling routing
+ 8. Fixed GroupCall.handleJoin — only existing members initiate
+ 9. Added ICE gathering wait before sending offers
+ 10. Fixed voice note button + playback
+ 11. Fixed URL room auto-join waits for WS ready
+ 12. Added fetch timeout + wake-up ping
+ 13. Fixed message timestamp for offline delivery
 ══════════════════════════════════════════════════ */
 
 const API = 'https://emltechstudio-inet-v2.hf.space';
 const WS_URL = 'wss://emltechstudio-inet-v2.hf.space/ws';
 
-/* ── AVATAR COLORS ─────────────────────────────── */
 const AVATAR_COLORS = [
  '#7B1535','#1E3A5F','#1A5E20','#4A148C',
  '#BF360C','#006064','#33691E','#4E342E',
  '#1A237E','#880E4F','#3E2723','#0D47A1'
 ];
 
-/* ── STICKERS ───────────────────────────────────── */
 const STICKER_PACKS = {
  '😊': ['😊','😂','🥹','😍','🤩','😎','🥳','😭','😤','🥺','😏','🤔','😴','🤯','🫡'],
  '🎉': ['🎉','🎊','🎈','🔥','💯','✨','⚡','🌟','💫','🎯','🏆','👑','🚀','💪','🎁'],
@@ -35,9 +36,6 @@ const STICKER_PACKS = {
  '🔥': ['👍','👎','👋','🤜','🤛','👏','🙌','🤦','🤷','💁','🙅','🙆','🫠','🫢','🫣'],
 };
 
-/* ══════════════════════════════════════════════════
- STATE
-══════════════════════════════════════════════════ */
 const State = {
  sim: null,
  simPassword: null,
@@ -81,11 +79,9 @@ const State = {
  msgQueue: [],
  apiRetries: 3,
  apiRetryDelay: 1000,
+ _spaceAwake: false,
 };
 
-/* ══════════════════════════════════════════════════
- CRYPTO HELPERS (SIM encryption)
-══════════════════════════════════════════════════ */
 const Crypto = {
  async deriveKey(password, salt) {
  const enc = new TextEncoder();
@@ -130,9 +126,6 @@ const Crypto = {
  }
 };
 
-/* ══════════════════════════════════════════════════
- STORAGE HELPERS
-══════════════════════════════════════════════════ */
 const Store = {
  get(k, def = null) {
  try { const v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : def; } catch { return def; }
@@ -147,9 +140,6 @@ const Store = {
  saveCallLog() { Store.set('inet_calllog', State.callLog); },
 };
 
-/* ══════════════════════════════════════════════════
- UTILITIES
-══════════════════════════════════════════════════ */
 const Utils = {
  initials(name) {
  if (!name) return '?';
@@ -239,26 +229,32 @@ const Utils = {
  sleep(ms) { return new Promise(r => setTimeout(r, ms)); },
 
  async fetchWithRetry(url, options, retries = State.apiRetries) {
+ if (!State._spaceAwake) {
+ try {
+ await fetch(`${API}/health`, { method: 'GET', mode: 'no-cors', signal: AbortSignal.timeout(8000) });
+ State._spaceAwake = true;
+ } catch {}
+ }
+
  for (let i = 0; i < retries; i++) {
  try {
  const controller = new AbortController();
  const id = setTimeout(() => controller.abort(), 15000);
  const res = await fetch(url, { ...options, signal: controller.signal });
  clearTimeout(id);
- if (res.ok) return res;
+ if (res.ok) { State._spaceAwake = true; return res; }
  if (res.status >= 500) throw new Error(`Server error ${res.status}`);
  return res;
  } catch (e) {
  if (i === retries - 1) throw e;
- await Utils.sleep(State.apiRetryDelay * Math.pow(2, i));
+ const delay = State.apiRetryDelay * Math.pow(2, i);
+ console.log(`[fetch] retry ${i+1}/${retries} in ${delay}ms`);
+ await Utils.sleep(delay);
  }
  }
  }
 };
 
-/* ══════════════════════════════════════════════════
- UI HELPERS
-══════════════════════════════════════════════════ */
 const UI = {
  $(id) { return document.getElementById(id); },
 
@@ -308,7 +304,11 @@ const UI = {
 };
 
 /* ══════════════════════════════════════════════════
- SIM MANAGEMENT
+ SIM MANAGEMENT (PATCHED)
+ - Device ID stored in localStorage only
+ - SIM file contains: net_number, contacts, created_at
+ - Eject does NOT delete device_id
+ - Backend accepts ANY device_id
 ══════════════════════════════════════════════════ */
 const SIM = {
  async create(password) {
@@ -332,7 +332,13 @@ const SIM = {
  },
 
  async activate(simData, password) {
- const device_id = Crypto.randomDeviceId();
+ // Use SAME device_id from localStorage, or generate new if first time on this browser
+ let device_id = Store.get('inet_device_id');
+ if (!device_id) {
+ device_id = Crypto.randomDeviceId();
+ Store.set('inet_device_id', device_id);
+ }
+
  const res = await Utils.fetchWithRetry(`${API}/sim/activate`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
@@ -418,7 +424,7 @@ const SIM = {
  State.simPassword = null;
  State.deviceId = null;
  Store.del('inet_enc_sim');
- Store.del('inet_device_id');
+ // PATCHED: Do NOT delete inet_device_id — keep it for next SIM
  Store.del('inet_vapid');
  sessionStorage.removeItem('inet_sim');
  sessionStorage.removeItem('inet_device');
@@ -428,9 +434,6 @@ const SIM = {
  },
 };
 
-/* ══════════════════════════════════════════════════
- WEBSOCKET
-══════════════════════════════════════════════════ */
 const WS = {
  connect() {
  if (State.wsConnecting) return;
@@ -442,6 +445,17 @@ const WS = {
  return;
  }
 
+ // Wake up Space before WebSocket
+ if (!State._spaceAwake) {
+ fetch(`${API}/health`, { method: 'GET', mode: 'no-cors', signal: AbortSignal.timeout(10000) })
+ .then(() => { State._spaceAwake = true; })
+ .catch(() => {})
+ .finally(() => _doConnect());
+ } else {
+ _doConnect();
+ }
+
+ function _doConnect() {
  State.wsConnecting = true;
  UI.setWsStatus('connecting');
 
@@ -483,6 +497,7 @@ const WS = {
  State.wsConnecting = false;
  UI.setWsStatus('offline');
  };
+ }
  },
 
  send(obj) {
@@ -583,9 +598,6 @@ const WS = {
  },
 };
 
-/* ══════════════════════════════════════════════════
- STATUS
-══════════════════════════════════════════════════ */
 const Status = {
  update(pin, data) {
  State.onlineStatus[pin] = { ...State.onlineStatus[pin], ...data };
@@ -625,9 +637,6 @@ const Status = {
  isOnline(pin) { return !!(State.onlineStatus[pin]?.online); },
 };
 
-/* ══════════════════════════════════════════════════
- PUSH NOTIFICATIONS
-══════════════════════════════════════════════════ */
 const Push = {
  async subscribe() {
  if (!('serviceWorker' in navigator) || !State.vapidKey) return false;
@@ -661,9 +670,6 @@ const Push = {
  }
 };
 
-/* ══════════════════════════════════════════════════
- CHAT
-══════════════════════════════════════════════════ */
 const Chat = {
  ensure(pin) {
  if (!State.chats[pin]) {
@@ -793,19 +799,14 @@ function dayLabel(ts) {
  return d.toLocaleDateString([], { weekday:'long', month:'short', day:'numeric' });
 }
 
-/* ══════════════════════════════════════════════════
- LINKIFY
-══════════════════════════════════════════════════ */
 function linkify(text) {
  if (!text) return '';
- return text.replace(/(https?:\/\/[^\s<>"]+)/g, url => {
+ return text.replace(/(https?://[^
+]+)/g, url => {
  return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="msg-link" onclick="event.stopPropagation()">${url}</a>`;
  });
 }
 
-/* ══════════════════════════════════════════════════
- RENDER
-══════════════════════════════════════════════════ */
 const Render = {
  chatList(filter = '') {
  const list = UI.$('chats-list');
@@ -977,7 +978,6 @@ const Render = {
  area.appendChild(wrap);
  area.scrollTop = area.scrollHeight;
 
- // Attach interactive handlers AFTER inserting into DOM
  if (msg.type === 'image' && msg.media) {
  const img = wrap.querySelector('.msg-img');
  if (img) img.onclick = () => App.previewMedia('image', msg.media);
@@ -1189,9 +1189,6 @@ const Render = {
  },
 };
 
-/* ══════════════════════════════════════════════════
- WEBRTC CALLS
-══════════════════════════════════════════════════ */
 const ICE_CONFIG = {
  iceServers: [
  { urls: 'stun:stun.l.google.com:19302' },
@@ -1486,9 +1483,6 @@ const Call = {
  },
 };
 
-/* ══════════════════════════════════════════════════
- GROUP CALLS
-══════════════════════════════════════════════════ */
 const GroupCall = {
  async start(roomId, roomName = 'Group Call') {
  if (State.groupCall) { UI.toast('Error', 'Already in a group call'); return; }
@@ -1518,14 +1512,10 @@ const GroupCall = {
  const { pin, room } = msg;
 
  if (pin === State.sim.net_number) {
- // I just joined — add existing members to my list (I wait for their offers)
  if (msg.members) {
- msg.members.forEach(p => {
- if (p !== State.sim.net_number) State.groupCall.members[p] = {};
- });
+ msg.members.forEach(p => { if (p !== State.sim.net_number) State.groupCall.members[p] = {}; });
  }
  } else {
- // Someone else joined — I (existing member) initiate connection TO them
  State.groupCall.members[pin] = {};
  UI.toast('Group Call', `${Utils.contactName(pin)} joined`);
  this.connectToPeer(pin);
@@ -1558,7 +1548,7 @@ const GroupCall = {
 
  async connectToPeer(pin) {
  if (!State.groupCall || !State.localStream) return;
- if (State.groupCall.peerConns[pin]) return; // Already connecting
+ if (State.groupCall.peerConns[pin]) return;
 
  const pc = new RTCPeerConnection(ICE_CONFIG);
  State.groupCall.peerConns[pin] = pc;
@@ -1686,9 +1676,6 @@ const GroupCall = {
  },
 };
 
-/* ══════════════════════════════════════════════════
- MEDIA RECORDING
-══════════════════════════════════════════════════ */
 const Recording = {
  async start() {
  try {
@@ -1742,9 +1729,6 @@ const Recording = {
  },
 };
 
-/* ══════════════════════════════════════════════════
- STICKERS
-══════════════════════════════════════════════════ */
 const Stickers = {
  currentPack: '😊',
 
@@ -1775,9 +1759,6 @@ const Stickers = {
  },
 };
 
-/* ══════════════════════════════════════════════════
- APP CONTROLLER
-══════════════════════════════════════════════════ */
 const App = {
  showSim(panel) {
  ['sim-welcome', 'sim-create', 'sim-unlock', 'sim-created'].forEach(id => {
@@ -1855,7 +1836,7 @@ const App = {
  await SIM.activate(simData, pass);
  } catch (e) {
  console.error('Activation error:', e);
- UI.toast('Network Error', 'Password correct, but could not connect to server. Please check your connection and try again.');
+ UI.toast('Network Error', e.message || 'Could not connect to server. Please check your connection and try again.');
  return;
  }
 
@@ -2489,9 +2470,6 @@ const App = {
  },
 };
 
-/* ══════════════════════════════════════════════════
- INIT
-══════════════════════════════════════════════════ */
 async function init() {
  if ('serviceWorker' in navigator) {
  navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
@@ -2524,6 +2502,7 @@ async function init() {
  const encSim = Store.get('inet_enc_sim');
  if (encSim) {
  State._pendingSimData = encSim;
+ State.deviceId = Store.get('inet_device_id');
  State.vapidKey = Store.get('inet_vapid');
  App.showSim('unlock');
  UI.$('sim-file-name').textContent = 'Your SIM card';
@@ -2552,7 +2531,6 @@ document.addEventListener('click', (ev) => {
  if (ev.target === UI.$('media-sheet')?.parentElement) App.closeMediaSheet();
 });
 
-// Expose all modules to window so HTML onclick handlers work
 window.App = App;
 window.Recording = Recording;
 window.Call = Call;
