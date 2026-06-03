@@ -1,20 +1,20 @@
 {
-  "name": "iNet",
+  "name": "iNet \u2014 Your Digital SIM",
   "short_name": "iNet",
-  "description": "Your digital SIM. Private calls, chats, and identity.",
-  "start_url": "/app.html",
+  "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#7B1535",
-  "theme_color": "#7B1535",
-  "orientation": "portrait",
+  "background_color": "#111B21",
+  "theme_color": "#128C7E",
   "icons": [
-    {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"},
-    {"src": "/apple-touch-icon.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"}
-  ],
-  "categories": ["social", "communication"],
-  "shortcuts": [
-    {"name": "Chats", "short_name": "Chats", "description": "Open your conversations", "url": "/app.html#chats", "icons": [{"src": "/icon.svg", "sizes": "96x96"}]},
-    {"name": "Dialpad", "short_name": "Dial", "description": "Make a call", "url": "/app.html#dialpad", "icons": [{"src": "/icon.svg", "sizes": "96x96"}]}
-  ],
-  "prefer_related_applications": false
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
 }
