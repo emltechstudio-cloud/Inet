@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#7B1535">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>iNet — Your Digital SIM</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ─────────────────────────────────────── */
+:root {
+  --wine:       #7B1535;
+  --wine-deep:  #5C0F28;
+  --wine-soft:  #9E1F45;
+  --wine-pale:  #F5E8EC;
+  --wine-mist:  #FAF3F5;
+  --white:      #FFFFFF;
+  --bg:         #F7F2F4;
+  --surface:    #FFFFFF;
+  --border:     #EDE0E4;
+  --text:       #180910;
+  --text-2:     #7A5865;
+  --text-3:     #B99AAA;
+  --green:      #22C55E;
+  --red-call:   #EF4444;
+  --blue:       #3B82F6;
+  --shadow-sm:  0 1px 4px rgba(123,21,53,.08);
+  --shadow-md:  0 4px 16px rgba(123,21,53,.12);
+  --shadow-lg:  0 12px 40px rgba(123,21,53,.18);
+  --radius:     16px;
+  --radius-sm:  10px;
+  --tab-h:      68px;
+  --safe-b:     env(safe-area-inset-bottom, 0px);
+  --header-h:   60px;
+  --font-d:     'Sora', sans-serif;
+  --font-b:     'DM Sans', sans-serif;
+}
+
+/* ── RESET ──────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%;overscroll-behavior:none}
+body{
+  font-family:var(--font-b);
+  background:var(--bg);
+  color:var(--text);
+  height:100%;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  user-select:none;
+}
+input,textarea,button{font-family:inherit;outline:none;border:none;background:none}
+button{cursor:pointer}
+img{display:block;max-width:100%}
+a{text-decoration:none;color:inherit}
+
+/* ── UTILS ──────────────────────────────────────── */
+.hidden { display: none !important; }
+
+/* ── AUTH SCREEN ────────────────────────────────── */
+#auth-screen {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, var(--wine-mist) 0%, var(--bg) 100%);
+  padding: 24px;
+}
+#auth-screen .logo {
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, var(--wine-deep), var(--wine-soft));
+  border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-size: 32px; font-weight: 700; color: #fff;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
+}
+#auth-screen h1 {
+  font-family: var(--font-d); font-size: 28px; font-weight: 700;
+  color: var(--text); margin-bottom: 8px; letter-spacing: -0.5px;
+}
+#auth-screen > p {
+  color: var(--text-2); margin-bottom: 32px; text-align: center; max-width: 300px;
+  font-size: 15px; line-height: 1.5;
+}
+.auth-panel {
+  width: 100%; max-width: 360px;
+  display: none; flex-direction: column; gap: 14px;
+}
+.auth-panel.active { display: flex; }
+.auth-btn {
+  width: 100%; height: 52px;
+  background: var(--wine); color: #fff;
+  font-family: var(--font-d); font-size: 15px; font-weight: 600;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 4px 14px rgba(123,21,53,.3);
+  transition: background .15s, transform .1s, box-shadow .15s;
+  letter-spacing: -0.1px;
+}
+.auth-btn:active { background: var(--wine-deep); transform: scale(.98); box-shadow: none; }
+.auth-btn.secondary {
+  background: var(--wine-pale); color: var(--wine);
+  box-shadow: none;
+}
+.auth-btn.secondary:active { background: #ecd5db; }
+.auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-input {
+  width: 100%; height: 52px;
+  background: var(--wine-mist);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 14px;
+  font-size: 15px; color: var(--text);
+  transition: border-color .15s;
+  -webkit-user-select: text; user-select: text;
+}
+.auth-input:focus { border-color: var(--wine); }
+.auth-input::placeholder { color: var(--text-3); }
+.auth-link {
+  color: var(--wine); text-decoration: none; font-size: 14px; text-align: center;
+  font-weight: 600; margin-top: 4px;
+}
+.auth-hint {
+  font-size: 13px; color: var(--text-3); text-align: center; line-height: 1.5;
+}
+.accounts-list { display: flex; flex-direction: column; gap: 10px; }
+.account-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: background .12s, transform .1s;
+  border: 1px solid var(--border);
+}
+.account-item:active { background: var(--wine-mist); transform: scale(.99); }
+.account-item .avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--wine);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-weight: 700; font-size: 16px; color: #fff;
+  flex-shrink: 0;
+}
+.account-item .info { flex: 1; }
+.account-item .name { font-family: var(--font-d); font-weight: 600; font-size: 15px; color: var(--text); }
+.account-item .meta { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+
+/* ── APP SHELL ──────────────────────────────────── */
+#app {
+  display: none; height: 100vh; flex-direction: column;
+  max-width: 480px; margin: 0 auto;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  position: relative; overflow: hidden;
+}
+#app-header {
+  height: var(--header-h);
+  display: flex; align-items: center; padding: 0 16px; gap: 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0; position: relative; z-index: 2;
+}
+#app-header .logo-sm {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--wine-deep), var(--wine-soft));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-weight: 800; color: #fff; font-size: 14px;
+}
+#app-header h2 {
+  flex: 1;
+  font-family: var(--font-d); font-size: 17px; font-weight: 600;
+  color: var(--text); letter-spacing: -0.2px;
+}
+.icon-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--wine);
+  font-size: 20px;
+  transition: background .15s;
+  background: transparent;
+  border: none;
+}
+.icon-btn:active { background: var(--wine-pale); }
+
+/* Search */
+.search-bar {
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.search-bar input {
+  width: 100%; height: 38px;
+  background: var(--wine-mist);
+  border-radius: 12px;
+  padding: 0 14px;
+  border: 1.5px solid transparent;
+  font-size: 14px; color: var(--text);
+  transition: border-color .15s;
+  outline: none;
+  -webkit-user-select: text; user-select: text;
+}
+.search-bar input:focus { border-color: var(--wine); }
+.search-bar input::placeholder { color: var(--text-3); }
+
+/* Views */
+.view {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--surface);
+}
+
+/* ── CHAT LIST ──────────────────────────────────── */
+.chat-list { display: flex; flex-direction: column; padding: 4px 0; }
+.chat-item {
+  display: flex; align-items: center;
+  padding: 12px 16px; gap: 12px;
+  transition: background .12s;
+  position: relative;
+}
+.chat-item:active { background: var(--wine-mist); }
+.chat-item .avatar {
+  width: 50px; height: 50px; border-radius: 50%;
+  background: var(--wine);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-size: 18px; font-weight: 600; color: #fff;
+  flex-shrink: 0; position: relative;
+}
+.chat-item .avatar .online-dot {
+  position: absolute; bottom: 1px; right: 1px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--green);
+  border: 2px solid var(--surface);
+}
+.chat-item .info { flex: 1; min-width: 0; }
+.chat-item .row {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+}
+.chat-item .name {
+  font-size: 15px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chat-item .time {
+  font-size: 11px; color: var(--text-3); flex-shrink: 0;
+}
+.chat-item .preview {
+  font-size: 13px; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.chat-item .unread {
+  min-width: 18px; height: 18px; border-radius: 9px;
+  background: var(--wine); color: #fff;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 5px; flex-shrink: 0;
+}
+
+/* ── CONTACT LIST ───────────────────────────────── */
+.contact-list { display: flex; flex-direction: column; padding: 4px 0; }
+.contact-item {
+  display: flex; align-items: center;
+  padding: 12px 16px; gap: 12px;
+  transition: background .12s;
+}
+.contact-item:active { background: var(--wine-mist); }
+.contact-item .avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--wine);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-weight: 700; font-size: 18px; color: #fff;
+  flex-shrink: 0;
+}
+.contact-item .info { flex: 1; min-width: 0; }
+.contact-item .name { font-size: 15px; font-weight: 600; color: var(--text); }
+.contact-item .pin { font-size: 13px; color: var(--text-3); margin-top: 1px; letter-spacing: 0.5px; }
+.contact-item .actions { display: flex; gap: 6px; }
+.contact-item .call-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--wine);
+  background: var(--wine-pale);
+  border: none; font-size: 17px;
+  transition: background .15s;
+}
+.contact-item .call-btn:active { background: #ecd5db; }
+
+/* ── CALLS LIST ─────────────────────────────────── */
+#calls-list .chat-item .preview { display: flex; align-items: center; gap: 4px; }
+
+/* ── EMPTY STATES ───────────────────────────────── */
+.empty-state {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 40px 32px;
+}
+.empty-state .icon {
+  width: 72px; height: 72px;
+  background: var(--wine-pale);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+}
+.empty-state p {
+  font-family: var(--font-d); font-size: 17px; font-weight: 600; color: var(--text);
+}
+.empty-state p + p {
+  font-family: var(--font-b); font-size: 13px; color: var(--text-2); font-weight: 400;
+}
+
+/* ── CHAT SCREEN ────────────────────────────────── */
+#chat-screen {
+  position: fixed; inset: 0; z-index: 200;
+  display: none; flex-direction: column;
+  background: var(--bg);
+}
+#chat-screen.active { display: flex; }
+.chat-header {
+  height: var(--header-h);
+  display: flex; align-items: center;
+  padding: 0 12px; gap: 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.chat-header .back-btn {
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--wine);
+  font-size: 22px;
+  background: transparent; border: none;
+  margin-left: -6px;
+}
+.chat-header .back-btn:active { background: var(--wine-pale); border-radius: 50%; }
+.chat-header .avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--wine);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-weight: 700; font-size: 16px; color: #fff;
+}
+.chat-header .info { flex: 1; min-width: 0; }
+.chat-header .name {
+  font-size: 15px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chat-header .status { font-size: 13px; color: var(--text-2); }
+.chat-header .call-btns { display: flex; gap: 2px; }
+.chat-header .call-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--wine); font-size: 20px;
+  background: transparent; border: none;
+  transition: background .15s;
+}
+.chat-header .call-btn:active { background: var(--wine-pale); }
+
+/* Messages */
+.msg-area {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 12px 12px 8px;
+  display: flex; flex-direction: column; gap: 3px;
+  background: var(--bg);
+}
+.msg-day {
+  text-align: center; font-size: 11px; color: var(--text-2); font-weight: 500;
+  padding: 8px 12px; background: rgba(255,255,255,.7);
+  border-radius: 12px; align-self: center; margin: 6px 0;
+  backdrop-filter: blur(4px);
+}
+.bubble-wrap { display: flex; max-width: 78%; gap: 2px; }
+.bubble-wrap.me { align-self: flex-end; justify-content: flex-end; }
+.bubble-wrap.them { align-self: flex-start; justify-content: flex-start; }
+.bubble {
+  padding: 9px 12px; border-radius: 18px;
+  font-size: 14px; line-height: 1.45; word-wrap: break-word;
+  position: relative;
+}
+.bubble.me {
+  background: var(--wine); color: #fff;
+  border-bottom-right-radius: 5px;
+}
+.bubble.them {
+  background: var(--surface); color: var(--text);
+  border-bottom-left-radius: 5px;
+  box-shadow: var(--shadow-sm);
+}
+.bubble .time {
+  font-size: 10px; opacity: 0.7; float: right; margin-left: 8px; margin-top: 4px;
+}
+.bubble img {
+  max-width: 100%; border-radius: var(--radius-sm); display: block; margin-bottom: 4px;
+}
+.bubble video {
+  max-width: 100%; border-radius: var(--radius-sm); display: block; margin-bottom: 4px;
+}
+.bubble .voice-bar {
+  display: flex; align-items: center; gap: 8px;
+}
+.bubble .voice-bar .play-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); border: none;
+  color: inherit; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; font-size: 14px;
+}
+.bubble.them .voice-bar .play-btn { background: var(--wine-pale); color: var(--wine); }
+.bubble .voice-bar .wave {
+  display: flex; align-items: center; gap: 2px; flex: 1;
+}
+.bubble .voice-bar .wave span {
+  width: 3px; background: currentColor; border-radius: 2px; opacity: 0.6;
+}
+.bubble .caption { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+
+/* Input Area */
+.input-area {
+  display: flex; align-items: flex-end; gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  padding-bottom: calc(10px + var(--safe-b));
+}
+.input-area .attach-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--wine); font-size: 22px;
+  background: transparent; border: none;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.input-area .attach-btn:active { background: var(--wine-pale); }
+.input-area textarea {
+  flex: 1; padding: 10px 14px;
+  background: var(--wine-mist);
+  border-radius: 22px;
+  border: 1.5px solid var(--border);
+  color: var(--text); font-size: 15px;
+  outline: none; resize: none; max-height: 100px;
+  font-family: inherit; line-height: 1.4;
+  -webkit-user-select: text; user-select: text;
+}
+.input-area textarea:focus { border-color: var(--wine); }
+.input-area textarea::placeholder { color: var(--text-3); }
+.send-btn, .mic-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--wine);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 20px;
+  border: none; flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(123,21,53,.3);
+  transition: background .15s, transform .1s;
+}
+.send-btn:active, .mic-btn:active { background: var(--wine-deep); transform: scale(.92); }
+.send-btn { display: none; }
+
+/* Recording Bar */
+#recording-bar {
+  display: none; align-items: center; gap: 10px;
+  padding: 8px 16px;
+  background: var(--wine-pale);
+  border-top: 1px solid #ecd5db;
+  flex-shrink: 0;
+}
+#recording-bar.active { display: flex; }
+.rec-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--red-call);
+  animation: pulse-rec 1.2s infinite;
+}
+@keyframes pulse-rec {
+  0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}
+  50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}
+}
+.rec-timer { font-family: var(--font-d); font-size: 15px; color: var(--text); }
+.cancel-btn { margin-left: auto; color: var(--text-2); border: none; background: none; font-size: 14px; cursor: pointer; font-weight: 600; }
+.send-voice-btn { color: var(--wine); border: none; background: none; font-size: 14px; cursor: pointer; font-weight: 600; }
+
+/* ── BOTTOM TABS ────────────────────────────────── */
+.bottom-tabs {
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  height: calc(var(--tab-h) + var(--safe-b));
+  padding-bottom: var(--safe-b);
+  flex-shrink: 0;
+}
+.tab-item {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 8px 0; gap: 4px;
+  cursor: pointer; color: var(--text-3); font-size: 11px;
+  border: none; background: none;
+  position: relative;
+  font-family: var(--font-b); font-weight: 500; letter-spacing: .2px;
+}
+.tab-item.active { color: var(--wine); }
+.tab-item .tab-icon { font-size: 22px; transition: transform .2s; }
+.tab-item.active .tab-icon { transform: scale(1.08); }
+.tab-badge {
+  position: absolute; top: 2px; right: calc(50% - 18px);
+  min-width: 18px; height: 18px; border-radius: 9px;
+  background: var(--wine); color: #fff;
+  font-size: 11px; font-weight: 600;
+  display: none; align-items: center; justify-content: center;
+  padding: 0 5px;
+}
+
+/* ── CALL OVERLAY ───────────────────────────────── */
+#call-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, #0D0508 0%, var(--wine-deep) 100%);
+}
+#call-overlay.active { display: flex; }
+.call-avatar {
+  width: 100px; height: 100px; border-radius: 50%;
+  background: rgba(255,255,255,.15);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-size: 40px; font-weight: 700; color: #fff;
+  margin-bottom: 16px;
+  border: 3px solid rgba(255,255,255,.2);
+}
+.call-name { font-family: var(--font-d); font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.call-status { color: rgba(255,255,255,.65); margin-bottom: 40px; font-size: 15px; }
+.call-timer { font-size: 18px; font-family: var(--font-d); color: rgba(255,255,255,.8); margin-bottom: 40px; letter-spacing: .5px; }
+.call-controls { display: flex; gap: 20px; }
+.call-control {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: rgba(255,255,255,.15);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 24px; border: none;
+  transition: background .15s, transform .1s;
+}
+.call-control:active { transform: scale(.92); }
+.call-control.end { background: var(--red-call); }
+.call-control.active { background: rgba(255,255,255,.9); color: var(--wine); }
+
+/* ── INCOMING CALL ──────────────────────────────── */
+#incoming-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, var(--wine-deep) 0%, var(--wine) 50%, #C2185B 100%);
+}
+#incoming-overlay.active { display: flex; }
+.incoming-actions { display: flex; gap: 48px; margin-top: 60px; }
+.incoming-btn {
+  width: 68px; height: 68px; border-radius: 50%;
+  border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  transition: transform .1s;
+}
+.incoming-btn:active { transform: scale(.92); }
+.incoming-btn.accept { background: var(--green); color: #fff; box-shadow: 0 4px 16px rgba(34,197,94,.4); }
+.incoming-btn.decline { background: var(--red-call); color: #fff; box-shadow: 0 4px 16px rgba(239,68,68,.4); }
+
+/* ── MEDIA PREVIEW ────────────────────────────────── */
+#media-preview-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  display: none; flex-direction: column;
+  background: rgba(0,0,0,0.95);
+}
+#media-preview-overlay.active { display: flex; }
+.media-preview-content {
+  flex: 1; display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.media-preview-content img, .media-preview-content video {
+  max-width: 100%; max-height: 70vh; border-radius: var(--radius-sm);
+}
+.media-preview-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+}
+.media-preview-bar input {
+  flex: 1; padding: 10px 14px;
+  background: var(--wine-mist);
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  color: var(--text); font-size: 15px; outline: none;
+}
+.media-preview-bar input:focus { border-color: var(--wine); }
+.media-preview-bar button {
+  padding: 10px 20px; border: none; border-radius: 20px;
+  background: var(--wine); color: #fff;
+  font-weight: 600; cursor: pointer; font-family: var(--font-d);
+  transition: background .15s;
+}
+.media-preview-bar button:active { background: var(--wine-deep); }
+#preview-close { background: var(--wine-pale) !important; color: var(--wine) !important; }
+
+/* ── SHEETS ─────────────────────────────────────── */
+.sheet-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  backdrop-filter: blur(2px);
+  z-index: 150; display: none;
+}
+.sheet-overlay.active { display: block; }
+.sheet {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 16px 20px calc(24px + var(--safe-b));
+  transform: translateY(100%); transition: transform .3s;
+  z-index: 151; max-height: 85vh; overflow-y: auto;
+}
+.sheet.active { transform: translateY(0); }
+.sheet-title {
+  font-family: var(--font-d); font-size: 18px; font-weight: 700;
+  color: var(--text); text-align: center; margin-bottom: 20px;
+}
+.sheet-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer; font-size: 15px; color: var(--text);
+}
+.sheet-item:last-child { border-bottom: none; }
+.sheet-item .icon { font-size: 24px; width: 32px; text-align: center; }
+
+/* ── SETTINGS ───────────────────────────────────── */
+#view-settings { background: var(--surface); }
+.settings-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.settings-item .label { font-size: 15px; color: var(--text); font-weight: 500; }
+.settings-item .value { font-size: 14px; color: var(--text-2); }
+
+/* ── FAB ────────────────────────────────────────── */
+.fab {
+  position: fixed;
+  bottom: calc(72px + var(--safe-b)); right: 16px;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--wine); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 24px; border: none;
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  transition: transform .15s, box-shadow .15s;
+}
+.fab:active { transform: scale(.93); box-shadow: var(--shadow-sm); }
+
+/* ── TOAST ──────────────────────────────────────── */
+#toast {
+  position: fixed; top: 16px; left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: var(--surface); color: var(--text);
+  padding: 12px 20px; border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 600; transition: transform 0.3s;
+  font-size: 14px; max-width: 90%; text-align: center;
+  border: 1px solid var(--border);
+  font-weight: 500;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── RESPONSIVE ─────────────────────────────────── */
+@media (min-width: 768px) {
+  #auth-screen { background: var(--bg); }
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== AUTH SCREEN ==================== -->
+<div id="auth-screen">
+  <div class="logo">iN</div>
+  <h1>Welcome to iNet</h1>
+  <p>Your digital SIM. Your identity. No phone number needed.</p>
+
+  <div id="auth-welcome" class="auth-panel active">
+    <button class="auth-btn" id="btn-continue">Continue with Device</button>
+    <button class="auth-btn secondary" id="btn-register">Get iNet Number</button>
+    <button class="auth-btn secondary" id="btn-login-num">Sign In with Number</button>
+    <button class="auth-btn secondary" id="btn-activate">Activate Device</button>
+    <a href="#" class="auth-link" id="link-import">Import SIM File</a>
+  </div>
+
+  <div id="auth-register" class="auth-panel">
+    <input type="password" class="auth-input" id="reg-pass" placeholder="Password (optional but recommended)">
+    <input type="password" class="auth-input" id="reg-pass-confirm" placeholder="Confirm Password">
+    <button class="auth-btn" id="btn-reg-submit">Get iNet Number</button>
+    <button class="auth-btn secondary" id="btn-reg-back">Back</button>
+  </div>
+
+  <div id="auth-accounts" class="auth-panel">
+    <p class="auth-hint">Select an account to continue</p>
+    <div class="accounts-list" id="accounts-list"></div>
+    <button class="auth-btn secondary" id="btn-accounts-back">Back</button>
+  </div>
+
+  <div id="auth-password" class="auth-panel">
+    <p class="auth-hint">Account: <span id="pw-account-num"></span></p>
+    <input type="password" class="auth-input" id="login-pass" placeholder="Enter Password">
+    <button class="auth-btn" id="btn-login-submit">Sign In</button>
+    <button class="auth-btn secondary" id="btn-pw-back">Back</button>
+  </div>
+
+  <div id="auth-login-num" class="auth-panel">
+    <input type="text" class="auth-input" id="login-number" placeholder="iNet Number (6 digits)" maxlength="6" inputmode="numeric">
+    <input type="password" class="auth-input" id="login-number-pass" placeholder="Password">
+    <button class="auth-btn" id="btn-login-number-submit">Sign In</button>
+    <button class="auth-btn secondary" id="btn-login-num-back">Back</button>
+  </div>
+
+  <div id="auth-activate" class="auth-panel">
+    <input type="text" class="auth-input" id="activate-number" placeholder="iNet Number (6 digits)" maxlength="6" inputmode="numeric">
+    <input type="password" class="auth-input" id="activate-pass" placeholder="Password">
+    <button class="auth-btn" id="btn-activate-submit">Activate Device</button>
+    <button class="auth-btn secondary" id="btn-activate-back">Back</button>
+  </div>
+
+  <div id="auth-created" class="auth-panel">
+    <p class="auth-hint">You are all set!</p>
+    <p class="auth-hint" style="font-size:32px;font-weight:700;color:var(--wine);margin:16px 0;" id="created-net-num">000000</p>
+    <p class="auth-hint">Save this number. You will need it to sign in on other devices.</p>
+    <button class="auth-btn" id="btn-enter-app">Enter iNet</button>
+  </div>
+
+  <div id="auth-unlock" class="auth-panel">
+    <p class="auth-hint">Unlock SIM</p>
+    <input type="password" class="auth-input" id="unlock-pass" placeholder="Enter your password to decrypt the SIM file">
+    <button class="auth-btn" id="btn-unlock-submit">Unlock & Connect</button>
+    <button class="auth-btn secondary" id="btn-unlock-back">Back</button>
+  </div>
+
+  <input type="file" id="sim-file-input" accept=".sim.inet" style="display:none">
+</div>
+
+<!-- ==================== APP ==================== -->
+<div id="app">
+  <div id="app-header">
+    <div class="logo-sm">iN</div>
+    <h2 id="header-title">Chats</h2>
+    <button class="icon-btn" id="btn-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+    <button class="icon-btn" id="btn-menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg></button>
+  </div>
+
+  <div class="search-bar hidden" id="search-bar">
+    <input type="text" id="search-input" placeholder="Search...">
+  </div>
+
+  <!-- Chats View -->
+  <div id="view-chats" class="view">
+    <div class="chat-list" id="chats-list"></div>
+    <div class="empty-state hidden" id="chats-empty">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+      <p>No chats yet</p>
+      <p style="font-size:13px;margin-top:4px;">Tap + to start a conversation</p>
+    </div>
+  </div>
+
+  <!-- Contacts View -->
+  <div id="view-contacts" class="view hidden">
+    <div class="contact-list" id="contacts-list"></div>
+    <div class="empty-state hidden" id="contacts-empty">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+      <p>No contacts yet</p>
+    </div>
+  </div>
+
+  <!-- Calls View -->
+  <div id="view-calls" class="view hidden">
+    <div class="chat-list" id="calls-list"></div>
+    <div class="empty-state hidden" id="calls-empty">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg></div>
+      <p>No calls yet</p>
+    </div>
+  </div>
+
+  <!-- Settings View -->
+  <div id="view-settings" class="view hidden">
+    <div class="settings-item">
+      <span class="label">iNet Number</span>
+      <span class="value" id="settings-net-num">-</span>
+    </div>
+    <div class="settings-item">
+      <span class="label">Member Since</span>
+      <span class="value" id="settings-created">-</span>
+    </div>
+    <div class="settings-item" id="btn-set-password" style="cursor:pointer;">
+      <span class="label">Set Password</span>
+      <span class="value"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+    </div>
+    <div class="settings-item" id="btn-download-sim" style="cursor:pointer;">
+      <span class="label">Download SIM File</span>
+      <span class="value"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+    </div>
+    <div class="settings-item" id="btn-eject" style="cursor:pointer;color:var(--red-call);">
+      <span class="label">Eject SIM</span>
+      <span class="value"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span>
+    </div>
+  </div>
+
+  <!-- Bottom Tabs -->
+  <div class="bottom-tabs">
+    <button class="tab-item active" data-tab="chats">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>
+      Chats
+      <span class="tab-badge" id="badge-chats"></span>
+    </button>
+    <button class="tab-item" data-tab="contacts">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
+      Contacts
+    </button>
+    <button class="tab-item" data-tab="calls">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg></span>
+      Calls
+      <span class="tab-badge" id="badge-calls"></span>
+    </button>
+    <button class="tab-item" data-tab="settings">
+      <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+      Settings
+    </button>
+  </div>
+
+  <button class="fab" id="fab-new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+</div>
+
+<!-- ==================== CHAT SCREEN ==================== -->
+<div id="chat-screen">
+  <div class="chat-header">
+    <button class="back-btn" id="chat-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div class="avatar" id="chat-avatar">?</div>
+    <div class="info">
+      <div class="name" id="chat-name">Contact</div>
+      <div class="status" id="chat-status">Offline</div>
+    </div>
+    <div class="call-btns">
+      <button class="call-btn" id="chat-call-audio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg></button>
+      <button class="call-btn" id="chat-call-video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></button>
+    </div>
+  </div>
+  <div class="msg-area" id="msg-area"></div>
+  <div id="recording-bar">
+    <div class="rec-dot"></div>
+    <span class="rec-timer" id="rec-timer">0:00</span>
+    <button class="cancel-btn" id="rec-cancel">Cancel</button>
+    <button class="send-voice-btn" id="rec-send">Send</button>
+  </div>
+  <div class="input-area" id="input-area">
+    <button class="attach-btn" id="btn-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></button>
+    <textarea id="msg-input" placeholder="Message" rows="1"></textarea>
+    <button class="mic-btn" id="btn-mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+    <button class="send-btn" id="btn-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+  </div>
+</div>
+
+<!-- ==================== CALL OVERLAY ==================== -->
+<div id="call-overlay">
+  <div class="call-avatar" id="call-avatar">?</div>
+  <div class="call-name" id="call-name">Contact</div>
+  <div class="call-status" id="call-status">Calling...</div>
+  <div class="call-timer hidden" id="call-timer">0:00</div>
+  <div class="call-controls">
+    <button class="call-control" id="call-mute"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg></button>
+    <button class="call-control" id="call-speaker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg></button>
+    <button class="call-control end" id="call-end"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0119 12.55M5 5a10.94 10.94 0 0114.29.73M2 2s3.75 3.5 4.72 6.06M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A2 2 0 012.18 10.18"/></svg></button>
+  </div>
+</div>
+
+<!-- ==================== INCOMING CALL ==================== -->
+<div id="incoming-overlay">
+  <div class="call-avatar" id="inc-avatar">?</div>
+  <div class="call-name" id="inc-name">Someone</div>
+  <div class="call-status" id="inc-type">Incoming call</div>
+  <div class="incoming-actions">
+    <button class="incoming-btn decline" id="inc-decline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <button class="incoming-btn accept" id="inc-accept"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg></button>
+  </div>
+</div>
+
+<!-- ==================== MEDIA PREVIEW ==================== -->
+<div id="media-preview-overlay">
+  <div class="media-preview-content" id="preview-content"></div>
+  <div class="media-preview-bar">
+    <input type="text" id="preview-caption" placeholder="Add a caption...">
+    <button id="preview-send">Send</button>
+    <button id="preview-close" style="background:var(--wine-pale);color:var(--wine);">Cancel</button>
+  </div>
+</div>
+
+<!-- ==================== SHEETS ==================== -->
+<div class="sheet-overlay" id="sheet-overlay"></div>
+
+<div class="sheet" id="attach-sheet">
+  <div class="sheet-title">Attach</div>
+  <div class="sheet-item" id="attach-photo"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><polyline points="21 15 16 10 5 21"/></svg></span> Photo</div>
+  <div class="sheet-item" id="attach-video"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></span> Video</div>
+  <div class="sheet-item" id="attach-file"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span> File</div>
+  <div class="sheet-item" id="attach-contact"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span> Contact</div>
+</div>
+
+<div class="sheet" id="new-chat-sheet">
+  <div class="sheet-title">New Chat</div>
+  <input type="text" class="auth-input" id="new-chat-pin" placeholder="Enter 6-digit iNet number" maxlength="6" inputmode="numeric" style="margin-bottom:12px;">
+  <div class="contact-list" id="new-chat-contacts" style="max-height:300px;overflow-y:auto;"></div>
+  <button class="auth-btn" id="btn-start-chat">Start Chat</button>
+  <button class="auth-btn secondary" id="btn-new-chat-cancel">Cancel</button>
+</div>
+
+<div class="sheet" id="add-contact-sheet">
+  <div class="sheet-title">Add Contact</div>
+  <input type="text" class="auth-input" id="add-contact-name" placeholder="Name" style="margin-bottom:8px;">
+  <input type="text" class="auth-input" id="add-contact-pin" placeholder="iNet Number (6 digits)" maxlength="6" inputmode="numeric" style="margin-bottom:12px;">
+  <button class="auth-btn" id="btn-save-contact">Save</button>
+  <button class="auth-btn secondary" id="btn-add-contact-cancel">Cancel</button>
+</div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="file-photo" accept="image/*" style="display:none">
+<input type="file" id="file-video" accept="video/*" style="display:none">
+<input type="file" id="file-file" style="display:none">
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Scripts -->
+<script type="module" src="js/app.js"></script>
+</body>
+  </html>
