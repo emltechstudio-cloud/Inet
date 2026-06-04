@@ -1,0 +1,201 @@
+const Chat = {
+  currentPin: null,
+  messages: [],
+
+  async init() {
+    this.messages = await Storage.getAll('messages');
+    this.renderChatsList();
+  },
+
+  renderChatsList() {
+    const el = document.getElementById('chats-list');
+    const chatMap = new Map();
+
+    this.messages.filter(m => !m.groupId).forEach(m => {
+      const other = m.from === Auth.getProfile().pin ? m.to : m.from;
+      if (!chatMap.has(other) || m.time > chatMap.get(other).time) {
+        chatMap.set(other, m);
+      }
+    });
+
+    if (!chatMap.size) {
+      el.innerHTML = '<div class="empty-state"><svg><use href="#icon-chat"/></svg><h3>No chats yet</h3><p>Start a conversation from Contacts or Dialpad</p></div>';
+      return;
+    }
+
+    const sorted = Array.from(chatMap.entries()).sort((a, b) => b[1].time - a[1].time);
+    el.innerHTML = '<div class="list">' + sorted.map(([pin, lastMsg]) => {
+      const name = Contacts.getName(pin);
+      const subtitle = lastMsg.type === 'text' ? lastMsg.content : lastMsg.type === 'image' ? 'Photo' : lastMsg.type === 'video' ? 'Video' : lastMsg.type === 'audio' ? 'Voice note' : 'File';
+      const unread = this.messages.filter(m => m.from === pin && m.to === Auth.getProfile().pin && !m.read).length;
+      return `
+      <div class="list-item" onclick="Chat.open('${pin}')">
+        <div class="list-item-avatar">${Utils.getInitials(name)}<div class="status-dot ${API.isConnected ? 'online' : 'offline'}"></div></div>
+        <div class="list-item-info">
+          <div class="list-item-title">${Utils.escapeHtml(name)}</div>
+          <div class="list-item-subtitle">${Utils.escapeHtml(subtitle)}</div>
+        </div>
+        <div class="list-item-meta">
+          <div class="list-item-time">${Utils.formatTime(lastMsg.time)}</div>
+          ${unread ? `<div class="list-item-badge">${unread}</div>` : ''}
+        </div>
+      </div>
+    `}).join('') + '</div>';
+  },
+
+  open(pin) {
+    this.currentPin = pin;
+    const name = Contacts.getName(pin);
+    document.getElementById('chat-name').textContent = name;
+    document.getElementById('chat-avatar').textContent = Utils.getInitials(name);
+    document.getElementById('chat-status').textContent = 'online';
+    document.getElementById('chat-messages').innerHTML = '';
+    UI.showScreen('chat');
+    this.loadMessages(pin);
+    this.markRead(pin);
+  },
+
+  async loadMessages(pin) {
+    const myPin = Auth.getProfile().pin;
+    const msgs = this.messages.filter(m => !m.groupId && ((m.from === myPin && m.to === pin) || (m.from === pin && m.to === myPin))).sort((a, b) => a.time - b.time);
+    msgs.forEach(m => this.renderMessage(m));
+    this.scrollToBottom();
+  },
+
+  renderMessage(msg) {
+    const el = document.getElementById('chat-messages');
+    const isMe = msg.from === Auth.getProfile().pin;
+    const html = this.buildMessageHTML(msg, isMe);
+    el.insertAdjacentHTML('beforeend', html);
+    this.scrollToBottom();
+  },
+
+  buildMessageHTML(msg, isMe) {
+    let content = '';
+    if (msg.type === 'text') content = `<div>${Utils.escapeHtml(msg.content)}</div>`;
+    else if (msg.type === 'image') content = `<img src="${msg.content}" class="message-media" onclick="Media.openViewer('${msg.content}','image')">`;
+    else if (msg.type === 'video') content = `<video src="${msg.content}" class="message-media" controls onclick="event.stopPropagation()" playsinline></video>`;
+    else if (msg.type === 'audio') content = `<div class="message-audio" onclick="Media.playAudio(this,'${msg.content}')"><svg><use href="#icon-play"/></svg><div class="message-audio-bar"></div><span style="font-size:12px;">Voice</span></div>`;
+    else if (msg.type === 'file') content = `<div class="message-file"><div class="message-file-icon"><svg><use href="#icon-file"/></svg></div><div class="message-file-info"><div class="message-file-name">${Utils.escapeHtml(msg.fileName || 'File')}</div><div class="message-file-size">${msg.fileSize || ''}</div></div></div>`;
+    else if (msg.type === 'sticker') content = `<div style="font-size:48px;text-align:center;">${msg.content}</div>`;
+
+    return `
+      <div class="message ${isMe ? 'sent' : 'received'}">
+        ${content}
+        <div class="message-time">${Utils.formatTime(msg.time)}</div>
+      </div>
+    `;
+  },
+
+  scrollToBottom() {
+    const el = document.getElementById('chat-messages');
+    if (el) el.scrollTop = el.scrollHeight;
+  },
+
+  handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      this.sendText();
+    }
+  },
+
+  async sendText() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text || !this.currentPin) return;
+    input.value = '';
+
+    const myPin = Auth.getProfile().pin;
+    const msg = {
+      id: Utils.generateId(),
+      from: myPin,
+      to: this.currentPin,
+      type: 'text',
+      content: text,
+      time: Date.now(),
+      read: true
+    };
+
+    await Storage.set('messages', msg);
+    this.messages.push(msg);
+    this.renderMessage(msg);
+    this.renderChatsList();
+
+    API.send({ type: 'chat', target: this.currentPin, payload: msg });
+  },
+
+  async sendMedia(type, content, extra = {}) {
+    if (!this.currentPin) return;
+    const myPin = Auth.getProfile().pin;
+    const msg = {
+      id: Utils.generateId(),
+      from: myPin,
+      to: this.currentPin,
+      type,
+      content,
+      time: Date.now(),
+      read: true,
+      ...extra
+    };
+    await Storage.set('messages', msg);
+    this.messages.push(msg);
+    this.renderMessage(msg);
+    this.renderChatsList();
+
+    API.send({ type: 'chat', target: this.currentPin, payload: msg });
+  },
+
+  async receiveMessage(msg) {
+    const payload = msg.payload || msg;
+    if (payload.groupId) {
+      Groups.receiveMessage(msg);
+      return;
+    }
+
+    const m = {
+      id: payload.id || Utils.generateId(),
+      from: msg.from,
+      to: Auth.getProfile().pin,
+      type: payload.type || 'text',
+      content: payload.content,
+      time: payload.time || Date.now(),
+      read: false,
+      fileName: payload.fileName,
+      fileSize: payload.fileSize
+    };
+
+    await Storage.set('messages', m);
+    this.messages.push(m);
+
+    if (this.currentPin === m.from) {
+      this.renderMessage(m);
+      this.markRead(m.from);
+    } else {
+      this.renderChatsList();
+      UI.toast(`Message from ${Contacts.getName(m.from)}`);
+    }
+  },
+
+  async markRead(pin) {
+    const myPin = Auth.getProfile().pin;
+    const unread = this.messages.filter(m => m.from === pin && m.to === myPin && !m.read);
+    for (const m of unread) {
+      m.read = true;
+      await Storage.set('messages', m);
+    }
+    this.renderChatsList();
+  },
+
+  search(query) {
+    const q = query.toLowerCase();
+    const items = document.querySelectorAll('#chats-list .list-item');
+    items.forEach(item => {
+      const text = item.textContent.toLowerCase();
+      item.style.display = text.includes(q) ? 'flex' : 'none';
+    });
+  },
+
+  openFromProfile() {
+    if (Contacts.currentPin) this.open(Contacts.currentPin);
+  }
+};

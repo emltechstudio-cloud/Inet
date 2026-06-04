@@ -1,0 +1,477 @@
+const Calls = {
+  pc: null,
+  localStream: null,
+  remoteStream: null,
+  currentCall: null,
+  callTimer: null,
+  callStartTime: 0,
+  isMuted: false,
+  isVideoOff: false,
+  isSpeakerOn: false,
+  callLog: [],
+  groupCallRoom: null,
+  groupPCs: {},
+  groupStreams: {},
+  groupLocalStream: null,
+  groupIsMuted: false,
+  groupIsVideoOff: false,
+
+  async init() {
+    this.callLog = await Storage.getAll('call_log');
+    this.renderLog();
+  },
+
+  // 1-on-1 Call
+  async startCall(video = false) {
+    const pin = Chat.currentPin || Contacts.currentPin;
+    if (!pin) return;
+
+    try {
+      this.localStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: video ? { width: 640, height: 480 } : false
+      });
+    } catch (e) {
+      UI.toast('Camera/mic access denied');
+      return;
+    }
+
+    this.currentCall = { pin, video, type: 'outgoing', status: 'calling' };
+    this.showCallScreen(pin, video, 'Calling...');
+    this.addLogEntry(pin, video ? 'video' : 'audio', 'outgoing', 'calling');
+
+    this.pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    this.localStream.getTracks().forEach(t => this.pc.addTrack(t, this.localStream));
+
+    this.pc.ontrack = (e) => {
+      this.remoteStream = e.streams[0];
+      if (video) {
+        this.showRemoteVideo(e.streams[0]);
+      }
+    };
+
+    this.pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        API.send({ type: 'ice_candidate', target: pin, payload: { candidate: e.candidate } });
+      }
+    };
+
+    const offer = await this.pc.createOffer();
+    await this.pc.setLocalDescription(offer);
+    API.send({ type: 'call_offer', target: pin, payload: { call_type: video ? 'video' : 'audio', sdp: offer.sdp } });
+  },
+
+  async receiveCallOffer(msg) {
+    const pin = msg.from;
+    const video = msg.payload.call_type === 'video';
+
+    if (this.currentCall) {
+      API.send({ type: 'call_busy', target: pin, payload: {} });
+      return;
+    }
+
+    this.currentCall = { pin, video, type: 'incoming', status: 'ringing' };
+    this.addLogEntry(pin, video ? 'video' : 'audio', 'incoming', 'ringing');
+
+    UI.showModal('Incoming Call', `
+      <div style="text-align:center;padding:24px;">
+        <div class="list-item-avatar" style="width:80px;height:80px;font-size:32px;margin:0 auto 16px;">${Utils.getInitials(Contacts.getName(pin))}</div>
+        <div style="font-size:20px;font-weight:600;margin-bottom:8px;">${Contacts.getName(pin)}</div>
+        <div style="color:var(--text-secondary);">${video ? 'Video call' : 'Audio call'}</div>
+      </div>
+    `, [
+      { label: 'Decline', class: 'danger', action: () => { this.rejectCall(pin); UI.hideModal(); } },
+      { label: 'Accept', class: 'primary', action: () => { this.acceptCall(pin, video); UI.hideModal(); } }
+    ]);
+  },
+
+  async acceptCall(pin, video) {
+    try {
+      this.localStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: video ? { width: 640, height: 480 } : false
+      });
+    } catch (e) {
+      UI.toast('Camera/mic access denied');
+      this.endCall();
+      return;
+    }
+
+    this.currentCall.status = 'connected';
+    this.showCallScreen(pin, video, 'Connected');
+    this.startCallTimer();
+    this.updateLogStatus('connected');
+
+    this.pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    this.localStream.getTracks().forEach(t => this.pc.addTrack(t, this.localStream));
+
+    this.pc.ontrack = (e) => {
+      this.remoteStream = e.streams[0];
+      if (video) this.showRemoteVideo(e.streams[0]);
+    };
+
+    this.pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        API.send({ type: 'ice_candidate', target: pin, payload: { candidate: e.candidate } });
+      }
+    };
+
+    await this.pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: msg.payload.sdp }));
+    const answer = await this.pc.createAnswer();
+    await this.pc.setLocalDescription(answer);
+    API.send({ type: 'call_answer', target: pin, payload: { sdp: answer.sdp } });
+  },
+
+  rejectCall(pin) {
+    API.send({ type: 'call_end', target: pin, payload: {} });
+    this.currentCall = null;
+    this.updateLogStatus('rejected');
+  },
+
+  async handleCallAnswer(msg) {
+    if (!this.pc || !this.currentCall) return;
+    await this.pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: msg.payload.sdp }));
+    this.currentCall.status = 'connected';
+    document.getElementById('call-status').textContent = 'Connected';
+    this.startCallTimer();
+    this.updateLogStatus('connected');
+  },
+
+  handleIceCandidate(msg) {
+    if (!this.pc) return;
+    this.pc.addIceCandidate(new RTCIceCandidate(msg.payload.candidate));
+  },
+
+  handleCallEnd(msg) {
+    this.endCall();
+    UI.toast('Call ended');
+  },
+
+  handleCallBusy(msg) {
+    this.endCall();
+    UI.toast('User is busy');
+    this.updateLogStatus('busy');
+  },
+
+  endCall() {
+    if (this.currentCall && this.currentCall.status !== 'connected') {
+      this.updateLogStatus('missed');
+    } else if (this.currentCall) {
+      this.updateLogStatus('ended');
+    }
+
+    if (this.pc) { this.pc.close(); this.pc = null; }
+    if (this.localStream) { this.localStream.getTracks().forEach(t => t.stop()); this.localStream = null; }
+    this.remoteStream = null;
+    this.stopCallTimer();
+    this.currentCall = null;
+    this.isMuted = false;
+    this.isVideoOff = false;
+    this.isSpeakerOn = false;
+
+    if (UI.history.length > 0) UI.goBack();
+    else { UI.showScreen('chats'); UI.showNav(true); }
+  },
+
+  showCallScreen(pin, video, status) {
+    const name = Contacts.getName(pin);
+    document.getElementById('call-avatar').textContent = Utils.getInitials(name);
+    document.getElementById('call-name').textContent = name;
+    document.getElementById('call-status').textContent = status;
+    document.getElementById('call-timer').textContent = '';
+    document.getElementById('call-video-grid').style.display = video ? 'grid' : 'none';
+    document.getElementById('call-reactions').style.display = video ? 'flex' : 'none';
+
+    if (video && this.localStream) {
+      const grid = document.getElementById('call-video-grid');
+      grid.innerHTML = `<div class="call-video-item"><video id="local-video" autoplay muted playsinline></video><div class="video-label">You</div></div>`;
+      document.getElementById('local-video').srcObject = this.localStream;
+    }
+
+    UI.showScreen('call');
+    UI.showNav(false);
+  },
+
+  showRemoteVideo(stream) {
+    const grid = document.getElementById('call-video-grid');
+    const name = Contacts.getName(this.currentCall.pin);
+    grid.innerHTML += `<div class="call-video-item"><video id="remote-video" autoplay playsinline></video><div class="video-label">${name}</div></div>`;
+    document.getElementById('remote-video').srcObject = stream;
+    grid.className = 'call-video-grid video-2';
+  },
+
+  startCallTimer() {
+    this.callStartTime = Date.now();
+    this.callTimer = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - this.callStartTime) / 1000);
+      document.getElementById('call-timer').textContent = Utils.formatDuration(elapsed);
+    }, 1000);
+  },
+
+  stopCallTimer() {
+    clearInterval(this.callTimer);
+  },
+
+  toggleMute() {
+    if (!this.localStream) return;
+    this.isMuted = !this.isMuted;
+    this.localStream.getAudioTracks().forEach(t => t.enabled = !this.isMuted);
+    document.getElementById('call-mute-btn').classList.toggle('active', this.isMuted);
+  },
+
+  toggleVideo() {
+    if (!this.localStream) return;
+    this.isVideoOff = !this.isVideoOff;
+    this.localStream.getVideoTracks().forEach(t => t.enabled = !this.isVideoOff);
+    document.getElementById('call-video-btn').classList.toggle('active', this.isVideoOff);
+  },
+
+  toggleSpeaker() {
+    this.isSpeakerOn = !this.isSpeakerOn;
+    document.getElementById('call-speaker-btn').classList.toggle('active', this.isSpeakerOn);
+  },
+
+  sendReaction(type) {
+    if (!this.currentCall) return;
+    const reactions = { heart: '\u2764', thumbsup: '\uD83D\uDC4D', laugh: '\uD83D\uDE02', fire: '\uD83D\uDD25', clap: '\uD83D\uDC4F' };
+    const emoji = reactions[type] || type;
+    API.send({ type: 'call_reaction', target: this.currentCall.pin, payload: { reaction: emoji } });
+    this.showReactionBubble(emoji);
+  },
+
+  showReactionBubble(emoji) {
+    const bubble = document.createElement('div');
+    bubble.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:64px;animation:reactionPop 1s ease forwards;pointer-events:none;z-index:400;';
+    bubble.textContent = emoji;
+    document.body.appendChild(bubble);
+    setTimeout(() => bubble.remove(), 1000);
+  },
+
+  // Group Calls
+  async startGroupCall() {
+    const g = Groups.list.find(x => x.id === Groups.currentId);
+    if (!g) return;
+    this.groupCallRoom = g.id;
+
+    try {
+      this.groupLocalStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { width: 320, height: 240 } });
+    } catch (e) {
+      UI.toast('Camera/mic access denied');
+      return;
+    }
+
+    UI.showScreen('group-call');
+    UI.showNav(false);
+    document.getElementById('gc-title').textContent = g.name;
+    document.getElementById('gc-members-count').textContent = '1 participant';
+
+    // Join room via WS
+    API.send({ type: 'gc_join', room: g.id, payload: {} });
+
+    // Invite all members
+    g.members.forEach(m => {
+      if (m !== Auth.getProfile().pin) {
+        API.send({ type: 'gc_invite', target: m, payload: { room: g.id } });
+      }
+    });
+
+    this.renderGroupVideoGrid();
+  },
+
+  async joinGroupCall(room) {
+    this.groupCallRoom = room;
+    try {
+      this.groupLocalStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: { width: 320, height: 240 } });
+    } catch (e) {
+      UI.toast('Camera/mic access denied');
+      return;
+    }
+
+    UI.showScreen('group-call');
+    UI.showNav(false);
+    document.getElementById('gc-title').textContent = 'Group Call';
+    API.send({ type: 'gc_join', room, payload: {} });
+    this.renderGroupVideoGrid();
+  },
+
+  renderGroupVideoGrid() {
+    const grid = document.getElementById('gc-video-grid');
+    const myPin = Auth.getProfile().pin;
+    let html = `<div class="call-video-item"><video id="gc-local-video" autoplay muted playsinline></video><div class="video-label">You</div></div>`;
+
+    Object.entries(this.groupStreams).forEach(([pin, stream]) => {
+      const name = Contacts.getName(pin);
+      html += `<div class="call-video-item"><video id="gc-video-${pin}" autoplay playsinline></video><div class="video-label">${name}</div></div>`;
+    });
+
+    grid.innerHTML = html;
+    const count = 1 + Object.keys(this.groupStreams).length;
+    grid.className = `call-video-grid video-${Math.min(count, 4)}`;
+    document.getElementById('gc-members-count').textContent = `${count} participant${count > 1 ? 's' : ''}`;
+
+    if (this.groupLocalStream) {
+      const localVid = document.getElementById('gc-local-video');
+      if (localVid) localVid.srcObject = this.groupLocalStream;
+    }
+
+    Object.entries(this.groupStreams).forEach(([pin, stream]) => {
+      const vid = document.getElementById(`gc-video-${pin}`);
+      if (vid) vid.srcObject = stream;
+    });
+  },
+
+  handleGroupSignal(msg) {
+    if (msg.type === 'gc_invite') {
+      const room = msg.payload.room;
+      const from = msg.from;
+      UI.showModal('Group Call', `
+        <div style="text-align:center;padding:16px;">
+          <div style="font-size:18px;font-weight:600;margin-bottom:8px;">${Contacts.getName(from)} invited you</div>
+          <div style="color:var(--text-secondary);">Join group call?</div>
+        </div>
+      `, [
+        { label: 'Decline', class: 'secondary', action: () => UI.hideModal() },
+        { label: 'Join', class: 'primary', action: () => { this.joinGroupCall(room); UI.hideModal(); } }
+      ]);
+    }
+    if (msg.type === 'gc_members') {
+      // Members list received
+    }
+    if (msg.type === 'gc_leave') {
+      const pin = msg.from;
+      if (this.groupStreams[pin]) {
+        delete this.groupStreams[pin];
+        if (this.groupPCs[pin]) { this.groupPCs[pin].close(); delete this.groupPCs[pin]; }
+        this.renderGroupVideoGrid();
+      }
+    }
+  },
+
+  toggleGroupMute() {
+    if (!this.groupLocalStream) return;
+    this.groupIsMuted = !this.groupIsMuted;
+    this.groupLocalStream.getAudioTracks().forEach(t => t.enabled = !this.groupIsMuted);
+    document.getElementById('gc-mute-btn').classList.toggle('active', this.groupIsMuted);
+  },
+
+  toggleGroupVideo() {
+    if (!this.groupLocalStream) return;
+    this.groupIsVideoOff = !this.groupIsVideoOff;
+    this.groupLocalStream.getVideoTracks().forEach(t => t.enabled = !this.groupIsVideoOff);
+    document.getElementById('gc-video-btn').classList.toggle('active', this.groupIsVideoOff);
+  },
+
+  toggleGroupSpeaker() {
+    this.isSpeakerOn = !this.isSpeakerOn;
+    document.getElementById('gc-speaker-btn').classList.toggle('active', this.isSpeakerOn);
+  },
+
+  sendGroupReaction(type) {
+    if (!this.groupCallRoom) return;
+    const reactions = { heart: '\u2764', thumbsup: '\uD83D\uDC4D', laugh: '\uD83D\uDE02', fire: '\uD83D\uDD25', clap: '\uD83D\uDC4F' };
+    const emoji = reactions[type] || type;
+    API.send({ type: 'gc_reaction', room: this.groupCallRoom, payload: { reaction: emoji, from: Auth.getProfile().pin } });
+    this.showReactionBubble(emoji);
+  },
+
+  leaveGroupCall() {
+    if (this.groupCallRoom) {
+      API.send({ type: 'gc_leave', room: this.groupCallRoom, payload: {} });
+    }
+    Object.values(this.groupPCs).forEach(pc => pc.close());
+    this.groupPCs = {};
+    if (this.groupLocalStream) { this.groupLocalStream.getTracks().forEach(t => t.stop()); this.groupLocalStream = null; }
+    this.groupStreams = {};
+    this.groupCallRoom = null;
+    this.groupIsMuted = false;
+    this.groupIsVideoOff = false;
+    UI.goBack();
+    UI.showNav(true);
+  },
+
+  // Call Log
+  addLogEntry(pin, type, direction, status) {
+    const entry = {
+      id: Utils.generateId(),
+      pin,
+      type,
+      direction,
+      status,
+      time: Date.now()
+    };
+    this.callLog.unshift(entry);
+    Storage.set('call_log', entry);
+    this.renderLog();
+  },
+
+  updateLogStatus(status) {
+    if (this.callLog.length && this.callLog[0].status !== 'ended' && this.callLog[0].status !== 'rejected') {
+      this.callLog[0].status = status;
+      Storage.set('call_log', this.callLog[0]);
+      this.renderLog();
+    }
+  },
+
+  renderLog() {
+    const el = document.getElementById('calls-list');
+    if (!this.callLog.length) {
+      el.innerHTML = '<div class="empty-state"><svg><use href="#icon-clock"/></svg><h3>No calls yet</h3><p>Your call history appears here</p></div>';
+      return;
+    }
+    el.innerHTML = '<div class="list">' + this.callLog.map(c => {
+      const name = Contacts.getName(c.pin);
+      const iconClass = c.direction === 'incoming' ? (c.status === 'missed' ? 'missed' : 'incoming') : 'outgoing';
+      const iconSvg = c.type === 'video' ? 'video' : 'phone';
+      return `
+      <div class="list-item call-log-item" onclick="Chat.open('${c.pin}')">
+        <div class="call-log-icon ${iconClass}"><svg><use href="#icon-${iconSvg}"/></svg></div>
+        <div class="list-item-info">
+          <div class="list-item-title">${Utils.escapeHtml(name)}</div>
+          <div class="list-item-subtitle">${c.direction} ${c.type} call ${c.status}</div>
+        </div>
+        <div class="list-item-meta">
+          <div class="list-item-time">${Utils.formatTime(c.time)}</div>
+        </div>
+      </div>
+    `}).join('') + '</div>';
+  },
+
+  renderCallLogScreen() {
+    const el = document.getElementById('call-log-list');
+    if (!this.callLog.length) {
+      el.innerHTML = '<div class="empty-state"><svg><use href="#icon-clock"/></svg><h3>No calls</h3><p>Your call history is empty</p></div>';
+      return;
+    }
+    el.innerHTML = '<div class="list">' + this.callLog.map(c => {
+      const name = Contacts.getName(c.pin);
+      const iconClass = c.direction === 'incoming' ? (c.status === 'missed' ? 'missed' : 'incoming') : 'outgoing';
+      const iconSvg = c.type === 'video' ? 'video' : 'phone';
+      return `
+      <div class="list-item call-log-item">
+        <div class="call-log-icon ${iconClass}"><svg><use href="#icon-${iconSvg}"/></svg></div>
+        <div class="list-item-info">
+          <div class="list-item-title">${Utils.escapeHtml(name)}</div>
+          <div class="list-item-subtitle">${c.direction} ${c.type} call ${c.status}</div>
+        </div>
+        <div class="list-item-meta">
+          <div class="list-item-time">${Utils.formatTime(c.time)}</div>
+        </div>
+      </div>
+    `}).join('') + '</div>';
+  },
+
+  async clearLog() {
+    if (!confirm('Clear all call history?')) return;
+    await Storage.clear('call_log');
+    this.callLog = [];
+    this.renderLog();
+    this.renderCallLogScreen();
+    UI.toast('Call log cleared');
+  }
+};
