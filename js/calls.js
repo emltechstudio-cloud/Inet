@@ -1,5 +1,6 @@
 const Calls = {
   pc: null,
+  dataChannel: null,
   localStream: null,
   remoteStream: null,
   currentCall: null,
@@ -43,6 +44,8 @@ const Calls = {
     this.pc = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
+    this.dataChannel = this.pc.createDataChannel('inet-data');
+    this.bindDataChannel(this.dataChannel);
 
     this.localStream.getTracks().forEach(t => this.pc.addTrack(t, this.localStream));
 
@@ -84,11 +87,11 @@ const Calls = {
       </div>
     `, [
       { label: 'Decline', class: 'danger', action: () => { this.rejectCall(pin); UI.hideModal(); } },
-      { label: 'Accept', class: 'primary', action: () => { this.acceptCall(pin, video); UI.hideModal(); } }
+      { label: 'Accept', class: 'primary', action: () => { this.acceptCall(pin, video, msg.payload.sdp); UI.hideModal(); } }
     ]);
   },
 
-  async acceptCall(pin, video) {
+  async acceptCall(pin, video, offerSdp) {
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -108,6 +111,7 @@ const Calls = {
     this.pc = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
+    this.pc.ondatachannel = (event) => this.bindDataChannel(event.channel);
 
     this.localStream.getTracks().forEach(t => this.pc.addTrack(t, this.localStream));
 
@@ -122,7 +126,7 @@ const Calls = {
       }
     };
 
-    await this.pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: msg.payload.sdp }));
+    await this.pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: offerSdp }));
     const answer = await this.pc.createAnswer();
     await this.pc.setLocalDescription(answer);
     API.send({ type: 'call_answer', target: pin, payload: { sdp: answer.sdp } });
@@ -148,6 +152,34 @@ const Calls = {
     this.pc.addIceCandidate(new RTCIceCandidate(msg.payload.candidate));
   },
 
+  bindDataChannel(channel) {
+    this.dataChannel = channel;
+    channel.onopen = () => UI.toast('Peer connection ready');
+    channel.onclose = () => { if (this.dataChannel === channel) this.dataChannel = null; };
+    channel.onerror = () => UI.toast('Peer data connection unavailable');
+    channel.onmessage = async (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.kind === 'chat' && message.message) {
+          await Chat.receiveMessage({ from: message.message.from, payload: message.message });
+        } else if (message.kind === 'reaction') {
+          this.showReactionBubble(message.value);
+        }
+      } catch (e) {
+        console.warn('Invalid peer data message', e);
+      }
+    };
+  },
+
+  sendData(payload) {
+    if (!this.dataChannel || this.dataChannel.readyState !== 'open') {
+      UI.toast('Connect to the peer before sending messages or files');
+      return false;
+    }
+    this.dataChannel.send(JSON.stringify(payload));
+    return true;
+  },
+
   handleCallEnd(msg) {
     this.endCall();
     UI.toast('Call ended');
@@ -166,6 +198,7 @@ const Calls = {
       this.updateLogStatus('ended');
     }
 
+    if (this.dataChannel) { try { this.dataChannel.close(); } catch (e) {} this.dataChannel = null; }
     if (this.pc) { this.pc.close(); this.pc = null; }
     if (this.localStream) { this.localStream.getTracks().forEach(t => t.stop()); this.localStream = null; }
     this.remoteStream = null;
@@ -241,8 +274,7 @@ const Calls = {
     if (!this.currentCall) return;
     const reactions = { heart: '\u2764', thumbsup: '\uD83D\uDC4D', laugh: '\uD83D\uDE02', fire: '\uD83D\uDD25', clap: '\uD83D\uDC4F' };
     const emoji = reactions[type] || type;
-    API.send({ type: 'call_reaction', target: this.currentCall.pin, payload: { reaction: emoji } });
-    this.showReactionBubble(emoji);
+    if (this.sendData({ kind: 'reaction', value: emoji })) this.showReactionBubble(emoji);
   },
 
   showReactionBubble(emoji) {

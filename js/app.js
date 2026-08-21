@@ -12,10 +12,7 @@ const App = {
       this.updateOnlineStatus();
     });
     API.on('disconnected', () => UI.toast('Disconnected'));
-    API.on('chat', (msg) => Chat.receiveMessage(msg));
-    API.on('offline_messages', (msgs) => {
-      msgs.forEach(m => Chat.receiveMessage({ type: 'chat', from: m.from || 'unknown', payload: m }));
-    });
+    API.on('connection_only', (msg) => UI.toast(msg.message || 'Messages are available only while connected peer-to-peer'));
     API.on('status_change', (payload) => {
       if (Chat.currentPin === payload.net_number) {
         document.getElementById('chat-status').textContent = payload.online ? 'online' : 'last seen ' + Utils.formatTime(payload.last_seen);
@@ -27,7 +24,6 @@ const App = {
       else if (msg.type === 'call_end') Calls.handleCallEnd(msg);
       else if (msg.type === 'call_busy') Calls.handleCallBusy(msg);
       else if (msg.type === 'ice_candidate') Calls.handleIceCandidate(msg);
-      else if (msg.type === 'call_reaction') Calls.showReactionBubble(msg.payload.reaction);
     });
     API.on('group_call', (msg) => Calls.handleGroupSignal(msg));
 

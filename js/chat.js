@@ -116,12 +116,14 @@ const Chat = {
       read: true
     };
 
+    if (!Calls.sendData({ kind: 'chat', message: msg })) {
+      input.value = text;
+      return;
+    }
     await Storage.set('messages', msg);
     this.messages.push(msg);
     this.renderMessage(msg);
     this.renderChatsList();
-
-    API.send({ type: 'chat', target: this.currentPin, payload: msg });
   },
 
   async sendMedia(type, content, extra = {}) {
@@ -137,12 +139,11 @@ const Chat = {
       read: true,
       ...extra
     };
+    if (!Calls.sendData({ kind: 'chat', message: msg })) return;
     await Storage.set('messages', msg);
     this.messages.push(msg);
     this.renderMessage(msg);
     this.renderChatsList();
-
-    API.send({ type: 'chat', target: this.currentPin, payload: msg });
   },
 
   async receiveMessage(msg) {
