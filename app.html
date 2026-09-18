@@ -3,50 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#7B1535">
+<meta name="theme-color" content="#5D9CEC">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>iNet</title>
+<title>Flink</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 /* ===== CSS Variables ===== */
 :root {
-  --primary: #7B1535;
-  --primary-light: #A02050;
-  --primary-dark: #5A0F27;
-  --secondary: #128C7E;
-  --secondary-light: #1AAE9E;
-  --bg: #0A0A0A;
-  --surface: #151515;
-  --surface-light: #1E1E1E;
-  --surface-lighter: #2A2A2A;
+  --primary: #5D9CEC;
+  --primary-light: #76A8EC;
+  --primary-dark: #3A7BC8;
+  --secondary: #00C853;
+  --secondary-light: #00C853;
+  --bg: #17212B;
+  --surface: #1E293B;
+  --surface-light: #2A3441;
+  --surface-lighter: #334155;
   --text: #FFFFFF;
-  --text-secondary: #AAAAAA;
-  --text-muted: #666666;
-  --border: #2A2A2A;
+  --text-secondary: #A0ACB8;
+  --text-muted: #6B7A8F;
+  --border: #334155;
   --success: #00C853;
   --danger: #FF1744;
   --warning: #FFC400;
   --online: #00C853;
-  --offline: #666666;
-  --call-bg: #0F0F0F;
+  --offline: #6B7A8F;
+  --call-bg: #0F172A;
   --shadow: 0 4px 20px rgba(0,0,0,0.5);
   --radius: 16px;
   --radius-sm: 8px;
   --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
 }
 
+
 .light-mode {
-  --bg: #F0F0F0;
+  --bg: #F0F2F5;
   --surface: #FFFFFF;
-  --surface-light: #F5F5F5;
-  --surface-lighter: #EEEEEE;
-  --text: #1A1A1A;
-  --text-secondary: #555555;
-  --text-muted: #888888;
-  --border: #E0E0E0;
-  --call-bg: #E8E8E8;
+  --surface-light: #F8FAFC;
+  --surface-lighter: #F1F5F9;
+  --text: #1E293B;
+  --text-secondary: #536471;
+  --text-muted: #94A3B8;
+  --border: #E2E8F0;
+  --call-bg: #E2E8F0;
+  --shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -127,7 +129,7 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 
 /* ===== Auth Screen ===== */
 .auth-screen { background:linear-gradient(180deg,var(--primary-dark),var(--bg)); justify-content:center; align-items:center; text-align:center; padding:24px; }
-.auth-logo { width:80px; height:80px; background:linear-gradient(135deg,var(--primary),var(--primary-light)); border-radius:24px; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; box-shadow:0 8px 32px rgba(123,21,53,0.4); }
+.auth-logo { width:80px; height:80px; background:linear-gradient(135deg,var(--primary),var(--primary-light)); border-radius:24px; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; box-shadow:0 8px 32px rgba(93, 156, 236,0.4); }
 .auth-logo svg { width:40px; height:40px; color:#fff; }
 .auth-title { font-size:28px; font-weight:700; margin-bottom:8px; }
 .auth-subtitle { font-size:16px; color:var(--text-secondary); margin-bottom:32px; }
@@ -158,7 +160,7 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 
 /* ===== Call Screen ===== */
 .call-screen { background:var(--call-bg); justify-content:center; align-items:center; text-align:center; padding:24px; position:relative; }
-.call-avatar { width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--primary-light)); display:flex; align-items:center; justify-content:center; font-size:48px; font-weight:600; color:#fff; margin-bottom:16px; box-shadow:0 8px 32px rgba(123,21,53,0.3); }
+.call-avatar { width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--primary-light)); display:flex; align-items:center; justify-content:center; font-size:48px; font-weight:600; color:#fff; margin-bottom:16px; box-shadow:0 8px 32px rgba(93, 156, 236,0.3); }
 .call-name { font-size:24px; font-weight:600; margin-bottom:4px; }
 .call-status { font-size:16px; color:var(--text-secondary); margin-bottom:48px; }
 .call-timer { font-size:14px; color:var(--text-secondary); margin-bottom:48px; font-variant-numeric:tabular-nums; }
@@ -231,7 +233,7 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
 
 /* ===== FAB ===== */
-.fab { position:fixed; bottom:80px; right:20px; width:56px; height:56px; border-radius:50%; background:var(--primary); color:#fff; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 16px rgba(123,21,53,0.4); transition:all var(--transition); z-index:5; }
+.fab { position:fixed; bottom:80px; right:20px; width:56px; height:56px; border-radius:50%; background:var(--primary); color:#fff; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 16px rgba(93, 156, 236,0.4); transition:all var(--transition); z-index:5; }
 .fab:hover { transform:scale(1.1); background:var(--primary-light); }
 .fab svg { width:24px; height:24px; }
 
@@ -257,7 +259,7 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 
 /* ===== Group Members ===== */
 .member-item { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:var(--radius-sm); }
-.member-item .member-role { font-size:12px; color:var(--primary); background:rgba(123,21,53,0.15); padding:2px 8px; border-radius:4px; }
+.member-item .member-role { font-size:12px; color:var(--primary); background:rgba(93, 156, 236,0.15); padding:2px 8px; border-radius:4px; }
 
 /* ===== Call Log ===== */
 .call-log-item { display:flex; align-items:center; gap:12px; padding:12px; border-radius:var(--radius-sm); cursor:pointer; }
@@ -348,48 +350,48 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
   <!-- ===== AUTH SCREEN ===== -->
   <div id="screen-auth" class="screen auth-screen active">
     <div class="auth-logo"><svg><use href="#icon-sim"/></svg></div>
-    <div class="auth-title">iNet</div>
+    <div class="auth-title">Flink</div>
     <div class="auth-subtitle">Secure messaging. No phone number needed.</div>
-    <button class="auth-btn" onclick="Auth.createSIM()"><svg width="20" height="20"><use href="#icon-plus"/></svg> Create New SIM</button>
-    <button class="auth-btn secondary" onclick="Auth.showLoadSIM()"><svg width="20" height="20"><use href="#icon-key"/></svg> Load Existing SIM</button>
-    <button class="auth-btn secondary" onclick="Auth.showFingerprint()"><svg width="20" height="20"><use href="#icon-shield"/></svg> Continue with iNet</button>
-    <div class="auth-hint">Your SIM is a PIN + device file. Keep it safe.</div>
+    <button class="auth-btn" onclick="Auth.createFlink SIM()"><svg width="20" height="20"><use href="#icon-plus"/></svg> Create New Flink SIM</button>
+    <button class="auth-btn secondary" onclick="Auth.showLoadFlink SIM()"><svg width="20" height="20"><use href="#icon-key"/></svg> Load Existing Flink SIM</button>
+    <button class="auth-btn secondary" onclick="Auth.showFingerprint()"><svg width="20" height="20"><use href="#icon-shield"/></svg> Continue with Flink</button>
+    <div class="auth-hint">Your Flink SIM is a Flink number + device file. Keep it safe.</div>
   </div>
 
-  <!-- Auth: Create SIM -->
+  <!-- Auth: Create Flink SIM -->
   <div id="screen-auth-create" class="screen auth-screen">
     <button class="header-btn" style="position:absolute;top:16px;left:16px;" onclick="UI.showScreen('auth')"><svg><use href="#icon-back"/></svg></button>
     <div class="auth-logo"><svg><use href="#icon-sim"/></svg></div>
-    <div class="auth-title">Creating SIM...</div>
-    <div class="auth-subtitle" id="create-sim-status">Contacting iNet servers</div>
+    <div class="auth-title">Creating Flink SIM...</div>
+    <div class="auth-subtitle" id="create-sim-status">Contacting Flink servers</div>
     <div id="new-sim-display" style="display:none;margin-top:24px;">
-      <div style="font-size:48px;font-weight:700;letter-spacing:8px;margin-bottom:8px;" id="new-sim-pin"></div>
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px;">Your iNet Number</div>
-      <button class="auth-btn" onclick="Auth.downloadSIM()">Download SIM File</button>
-      <button class="auth-btn secondary" onclick="Auth.enterApp()">Enter iNet</button>
+      <div style="font-size:48px;font-weight:700;letter-spacing:8px;margin-bottom:8px;" id="new-flink-number"></div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px;">Your Flink Number</div>
+      <button class="auth-btn" onclick="Auth.downloadSIM()">Download Flink SIM File</button>
+      <button class="auth-btn secondary" onclick="Auth.enterApp()">Enter Flink</button>
     </div>
   </div>
 
-  <!-- Auth: Load SIM -->
+  <!-- Auth: Load Flink SIM -->
   <div id="screen-auth-load" class="screen auth-screen">
     <button class="header-btn" style="position:absolute;top:16px;left:16px;" onclick="UI.showScreen('auth')"><svg><use href="#icon-back"/></svg></button>
     <div class="auth-logo"><svg><use href="#icon-key"/></svg></div>
-    <div class="auth-title">Load SIM</div>
-    <div class="auth-subtitle">Enter your 6-digit PIN</div>
-    <input type="text" class="auth-input" id="load-sim-pin" maxlength="6" placeholder="000000" inputmode="numeric">
+    <div class="auth-title">Load Flink SIM</div>
+    <div class="auth-subtitle">Enter your 6-digit Flink number</div>
+    <input type="text" class="auth-input" id="load-flink-number" maxlength="6" placeholder="000000" inputmode="numeric">
     <button class="auth-btn" onclick="Auth.loadSIM()">Verify & Enter</button>
-    <div class="auth-hint">Or <span class="auth-link" onclick="Auth.triggerFileLoad()">load from .sim.inet file</span></div>
-    <input type="file" id="sim-file-input" accept=".inet,.sim,.json" style="display:none" onchange="Auth.handleFileLoad(event)">
+    <div class="auth-hint">Or <span class="auth-link" onclick="Auth.triggerFileLoad()">load from .sim.json file</span></div>
+    <input type="file" id="sim-file-input" accept=".json,.sim" style="display:none" onchange="Auth.handleFileLoad(event)">
   </div>
 
   <!-- Auth: Fingerprint -->
   <div id="screen-auth-fingerprint" class="screen auth-screen">
     <button class="header-btn" style="position:absolute;top:16px;left:16px;" onclick="UI.showScreen('auth')"><svg><use href="#icon-back"/></svg></button>
     <div class="auth-logo"><svg><use href="#icon-shield"/></svg></div>
-    <div class="auth-title">Continue with iNet</div>
+    <div class="auth-title">Continue with Flink</div>
     <div class="auth-subtitle">Using device fingerprint</div>
     <button class="auth-btn" onclick="Auth.fingerprintLogin()">Scan Device</button>
-    <div class="auth-hint">Looks for SIMs previously used on this device.</div>
+    <div class="auth-hint">Looks for Flink SIMs previously used on this device.</div>
   </div>
 
   <!-- ===== MAIN SCREENS ===== -->
@@ -436,7 +438,7 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
     <div class="search-bar">
       <input type="text" class="search-input" id="contact-search" placeholder="Search contacts..." oninput="Contacts.search(this.value)">
     </div>
-    <div class="content" id="contacts-list"><div class="empty-state"><svg><use href="#icon-contacts"/></svg><h3>No contacts</h3><p>Add contacts by their iNet PIN</p></div></div>
+    <div class="content" id="contacts-list"><div class="empty-state"><svg><use href="#icon-contacts"/></svg><h3>No contacts</h3><p>Add contacts by their Flink Flink number</p></div></div>
   </div>
 
   <div id="screen-contact-add" class="screen">
@@ -446,7 +448,7 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
     </div>
     <div class="content" style="padding:24px;">
       <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:13px;color:var(--text-muted);margin-bottom:6px;">iNet PIN</label>
+        <label style="display:block;font-size:13px;color:var(--text-muted);margin-bottom:6px;">Flink Flink number</label>
         <input type="text" class="input" id="add-contact-pin" maxlength="6" placeholder="000000" inputmode="numeric">
       </div>
       <div style="margin-bottom:16px;">
@@ -680,10 +682,10 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
         <div class="settings-group-title">Account</div>
         <div class="settings-item" onclick="Settings.showProfile()">
           <div class="settings-item-left"><svg><use href="#icon-sim"/></svg><div class="settings-item-label">My Profile</div></div>
-          <div class="settings-item-right"><span id="settings-my-pin" style="font-size:13px;"></span></div>
+          <div class="settings-item-right"><span id="settings-my-flink-number" style="font-size:13px;"></span></div>
         </div>
-        <div class="settings-item" onclick="Settings.downloadSIM()">
-          <div class="settings-item-left"><svg><use href="#icon-download"/></svg><div class="settings-item-label">Download SIM</div></div>
+        <div class="settings-item" onclick="Settings.downloadFlink SIM()">
+          <div class="settings-item-left"><svg><use href="#icon-download"/></svg><div class="settings-item-label">Download Flink SIM</div></div>
         </div>
         <div class="settings-item" onclick="Settings.logout()">
           <div class="settings-item-left"><svg><use href="#icon-logout"/></svg><div class="settings-item-label">Logout</div></div>

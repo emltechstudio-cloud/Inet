@@ -24,8 +24,8 @@ const Calls = {
 
   // 1-on-1 Call
   async startCall(video = false) {
-    const pin = Chat.currentPin || Contacts.currentPin;
-    if (!pin) return;
+    const flinkNumber = Chat.currentFlinkNumber || Contacts.currentFlinkNumber;
+    if (!flinkNumber) return;
 
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
@@ -37,14 +37,14 @@ const Calls = {
       return;
     }
 
-    this.currentCall = { pin, video, type: 'outgoing', status: 'calling' };
-    this.showCallScreen(pin, video, 'Calling...');
-    this.addLogEntry(pin, video ? 'video' : 'audio', 'outgoing', 'calling');
+    this.currentCall = { flinkNumber, video, type: 'outgoing', status: 'calling' };
+    this.showCallScreen(flinkNumber, video, 'Calling...');
+    this.addLogEntry(flinkNumber, video ? 'video' : 'audio', 'outgoing', 'calling');
 
     this.pc = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
-    this.dataChannel = this.pc.createDataChannel('inet-data');
+    this.dataChannel = this.pc.createDataChannel('Flink-data');
     this.bindDataChannel(this.dataChannel);
 
     this.localStream.getTracks().forEach(t => this.pc.addTrack(t, this.localStream));
@@ -58,40 +58,40 @@ const Calls = {
 
     this.pc.onicecandidate = (e) => {
       if (e.candidate) {
-        API.send({ type: 'ice_candidate', target: pin, payload: { candidate: e.candidate } });
+        API.send({ type: 'ice_candidate', target: flinkNumber, payload: { candidate: e.candidate } });
       }
     };
 
     const offer = await this.pc.createOffer();
     await this.pc.setLocalDescription(offer);
-    API.send({ type: 'call_offer', target: pin, payload: { call_type: video ? 'video' : 'audio', sdp: offer.sdp } });
+    API.send({ type: 'call_offer', target: flinkNumber, payload: { call_type: video ? 'video' : 'audio', sdp: offer.sdp } });
   },
 
   async receiveCallOffer(msg) {
-    const pin = msg.from;
+    const flinkNumber = msg.from;
     const video = msg.payload.call_type === 'video';
 
     if (this.currentCall) {
-      API.send({ type: 'call_busy', target: pin, payload: {} });
+      API.send({ type: 'call_busy', target: flinkNumber, payload: {} });
       return;
     }
 
-    this.currentCall = { pin, video, type: 'incoming', status: 'ringing' };
-    this.addLogEntry(pin, video ? 'video' : 'audio', 'incoming', 'ringing');
+    this.currentCall = { flinkNumber, video, type: 'incoming', status: 'ringing' };
+    this.addLogEntry(flinkNumber, video ? 'video' : 'audio', 'incoming', 'ringing');
 
     UI.showModal('Incoming Call', `
       <div style="text-align:center;padding:24px;">
-        <div class="list-item-avatar" style="width:80px;height:80px;font-size:32px;margin:0 auto 16px;">${Utils.getInitials(Contacts.getName(pin))}</div>
-        <div style="font-size:20px;font-weight:600;margin-bottom:8px;">${Contacts.getName(pin)}</div>
+        <div class="list-item-avatar" style="width:80px;height:80px;font-size:32px;margin:0 auto 16px;">${Utils.getInitials(Contacts.getName(flinkNumber))}</div>
+        <div style="font-size:20px;font-weight:600;margin-bottom:8px;">${Contacts.getName(flinkNumber)}</div>
         <div style="color:var(--text-secondary);">${video ? 'Video call' : 'Audio call'}</div>
       </div>
     `, [
-      { label: 'Decline', class: 'danger', action: () => { this.rejectCall(pin); UI.hideModal(); } },
-      { label: 'Accept', class: 'primary', action: () => { this.acceptCall(pin, video, msg.payload.sdp); UI.hideModal(); } }
+      { label: 'Decline', class: 'danger', action: () => { this.rejectCall(flinkNumber); UI.hideModal(); } },
+      { label: 'Accept', class: 'primary', action: () => { this.acceptCall(flinkNumber, video, msg.payload.sdp); UI.hideModal(); } }
     ]);
   },
 
-  async acceptCall(pin, video, offerSdp) {
+  async acceptCall(flinkNumber, video, offerSdp) {
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -104,7 +104,7 @@ const Calls = {
     }
 
     this.currentCall.status = 'connected';
-    this.showCallScreen(pin, video, 'Connected');
+    this.showCallScreen(flinkNumber, video, 'Connected');
     this.startCallTimer();
     this.updateLogStatus('connected');
 
@@ -122,18 +122,18 @@ const Calls = {
 
     this.pc.onicecandidate = (e) => {
       if (e.candidate) {
-        API.send({ type: 'ice_candidate', target: pin, payload: { candidate: e.candidate } });
+        API.send({ type: 'ice_candidate', target: flinkNumber, payload: { candidate: e.candidate } });
       }
     };
 
     await this.pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: offerSdp }));
     const answer = await this.pc.createAnswer();
     await this.pc.setLocalDescription(answer);
-    API.send({ type: 'call_answer', target: pin, payload: { sdp: answer.sdp } });
+    API.send({ type: 'call_answer', target: flinkNumber, payload: { sdp: answer.sdp } });
   },
 
-  rejectCall(pin) {
-    API.send({ type: 'call_end', target: pin, payload: {} });
+  rejectCall(flinkNumber) {
+    API.send({ type: 'call_end', target: flinkNumber, payload: {} });
     this.currentCall = null;
     this.updateLogStatus('rejected');
   },
@@ -212,8 +212,8 @@ const Calls = {
     else { UI.showScreen('chats'); UI.showNav(true); }
   },
 
-  showCallScreen(pin, video, status) {
-    const name = Contacts.getName(pin);
+  showCallScreen(flinkNumber, video, status) {
+    const name = Contacts.getName(flinkNumber);
     document.getElementById('call-avatar').textContent = Utils.getInitials(name);
     document.getElementById('call-name').textContent = name;
     document.getElementById('call-status').textContent = status;
@@ -233,7 +233,7 @@ const Calls = {
 
   showRemoteVideo(stream) {
     const grid = document.getElementById('call-video-grid');
-    const name = Contacts.getName(this.currentCall.pin);
+    const name = Contacts.getName(this.currentCall.flinkNumber);
     grid.innerHTML += `<div class="call-video-item"><video id="remote-video" autoplay playsinline></video><div class="video-label">${name}</div></div>`;
     document.getElementById('remote-video').srcObject = stream;
     grid.className = 'call-video-grid video-2';
@@ -308,7 +308,7 @@ const Calls = {
 
     // Invite all members
     g.members.forEach(m => {
-      if (m !== Auth.getProfile().pin) {
+      if (m !== Auth.getProfile().flinkNumber) {
         API.send({ type: 'gc_invite', target: m, payload: { room: g.id } });
       }
     });
@@ -334,12 +334,12 @@ const Calls = {
 
   renderGroupVideoGrid() {
     const grid = document.getElementById('gc-video-grid');
-    const myPin = Auth.getProfile().pin;
+    const myPin = Auth.getProfile().flinkNumber;
     let html = `<div class="call-video-item"><video id="gc-local-video" autoplay muted playsinline></video><div class="video-label">You</div></div>`;
 
-    Object.entries(this.groupStreams).forEach(([pin, stream]) => {
-      const name = Contacts.getName(pin);
-      html += `<div class="call-video-item"><video id="gc-video-${pin}" autoplay playsinline></video><div class="video-label">${name}</div></div>`;
+    Object.entries(this.groupStreams).forEach(([flinkNumber, stream]) => {
+      const name = Contacts.getName(flinkNumber);
+      html += `<div class="call-video-item"><video id="gc-video-${flinkNumber}" autoplay playsinline></video><div class="video-label">${name}</div></div>`;
     });
 
     grid.innerHTML = html;
@@ -352,8 +352,8 @@ const Calls = {
       if (localVid) localVid.srcObject = this.groupLocalStream;
     }
 
-    Object.entries(this.groupStreams).forEach(([pin, stream]) => {
-      const vid = document.getElementById(`gc-video-${pin}`);
+    Object.entries(this.groupStreams).forEach(([flinkNumber, stream]) => {
+      const vid = document.getElementById(`gc-video-${flinkNumber}`);
       if (vid) vid.srcObject = stream;
     });
   },
@@ -376,10 +376,10 @@ const Calls = {
       // Members list received
     }
     if (msg.type === 'gc_leave') {
-      const pin = msg.from;
-      if (this.groupStreams[pin]) {
-        delete this.groupStreams[pin];
-        if (this.groupPCs[pin]) { this.groupPCs[pin].close(); delete this.groupPCs[pin]; }
+      const flinkNumber = msg.from;
+      if (this.groupStreams[flinkNumber]) {
+        delete this.groupStreams[flinkNumber];
+        if (this.groupPCs[flinkNumber]) { this.groupPCs[flinkNumber].close(); delete this.groupPCs[flinkNumber]; }
         this.renderGroupVideoGrid();
       }
     }
@@ -408,7 +408,7 @@ const Calls = {
     if (!this.groupCallRoom) return;
     const reactions = { heart: '\u2764', thumbsup: '\uD83D\uDC4D', laugh: '\uD83D\uDE02', fire: '\uD83D\uDD25', clap: '\uD83D\uDC4F' };
     const emoji = reactions[type] || type;
-    API.send({ type: 'gc_reaction', room: this.groupCallRoom, payload: { reaction: emoji, from: Auth.getProfile().pin } });
+    API.send({ type: 'gc_reaction', room: this.groupCallRoom, payload: { reaction: emoji, from: Auth.getProfile().flinkNumber } });
     this.showReactionBubble(emoji);
   },
 
@@ -428,10 +428,10 @@ const Calls = {
   },
 
   // Call Log
-  addLogEntry(pin, type, direction, status) {
+  addLogEntry(flinkNumber, type, direction, status) {
     const entry = {
       id: Utils.generateId(),
-      pin,
+      flinkNumber,
       type,
       direction,
       status,
@@ -457,11 +457,11 @@ const Calls = {
       return;
     }
     el.innerHTML = '<div class="list">' + this.callLog.map(c => {
-      const name = Contacts.getName(c.pin);
+      const name = Contacts.getName(c.flinkNumber);
       const iconClass = c.direction === 'incoming' ? (c.status === 'missed' ? 'missed' : 'incoming') : 'outgoing';
       const iconSvg = c.type === 'video' ? 'video' : 'phone';
       return `
-      <div class="list-item call-log-item" onclick="Chat.open('${c.pin}')">
+      <div class="list-item call-log-item" onclick="Chat.open('${c.flinkNumber}')">
         <div class="call-log-icon ${iconClass}"><svg><use href="#icon-${iconSvg}"/></svg></div>
         <div class="list-item-info">
           <div class="list-item-title">${Utils.escapeHtml(name)}</div>
@@ -481,7 +481,7 @@ const Calls = {
       return;
     }
     el.innerHTML = '<div class="list">' + this.callLog.map(c => {
-      const name = Contacts.getName(c.pin);
+      const name = Contacts.getName(c.flinkNumber);
       const iconClass = c.direction === 'incoming' ? (c.status === 'missed' ? 'missed' : 'incoming') : 'outgoing';
       const iconSvg = c.type === 'video' ? 'video' : 'phone';
       return `

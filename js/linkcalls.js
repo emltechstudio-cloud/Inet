@@ -53,7 +53,7 @@ const LinkCalls = {
   shareLink() {
     const url = document.getElementById("link-call-url").textContent;
     if (navigator.share) {
-      navigator.share({ title: "Join my iNet call", url });
+      navigator.share({ title: "Join my Flink call", url });
     } else {
       this.copyLink();
     }
@@ -98,7 +98,7 @@ const LinkCalls = {
   setupSignaling() {
     // Simple peer discovery using BroadcastChannel (same browser) or WebSocket fallback
     if (typeof BroadcastChannel !== "undefined") {
-      this.channel = new BroadcastChannel("inet_link_call_" + this.roomId);
+      this.channel = new BroadcastChannel("flink_link_call_" + this.roomId);
       this.channel.onmessage = (e) => this.handleSignal(e.data);
       this.channel.postMessage({ type: "join", from: this.getAnonymousId() });
     } else {
@@ -108,10 +108,10 @@ const LinkCalls = {
   },
 
   getAnonymousId() {
-    let id = localStorage.getItem("inet_anon_id");
+    let id = localStorage.getItem("flink_anon_id");
     if (!id) {
       id = Math.random().toString(36).substring(2, 15);
-      localStorage.setItem("inet_anon_id", id);
+      localStorage.setItem("flink_anon_id", id);
     }
     return id;
   },

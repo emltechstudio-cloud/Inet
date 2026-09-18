@@ -79,7 +79,7 @@ const UI = {
 
   showChatMenu() {
     UI.showModal('Chat Options', `
-      <div class="settings-item" onclick="Contacts.openProfile('${Chat.currentPin}');UI.hideModal()">
+      <div class="settings-item" onclick="Contacts.openProfile('${Chat.currentFlinkNumber}');UI.hideModal()">
         <div class="settings-item-left"><svg><use href="#icon-info"/></svg><div class="settings-item-label">Contact Info</div></div>
       </div>
       <div class="settings-item" onclick="Calls.startCall(false);UI.hideModal()">

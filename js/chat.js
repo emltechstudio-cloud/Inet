@@ -1,5 +1,5 @@
 const Chat = {
-  currentPin: null,
+  currentFlinkNumber: null,
   messages: [],
 
   async init() {
@@ -12,7 +12,7 @@ const Chat = {
     const chatMap = new Map();
 
     this.messages.filter(m => !m.groupId).forEach(m => {
-      const other = m.from === Auth.getProfile().pin ? m.to : m.from;
+      const other = m.from === Auth.getProfile().flinkNumber ? m.to : m.from;
       if (!chatMap.has(other) || m.time > chatMap.get(other).time) {
         chatMap.set(other, m);
       }
@@ -24,12 +24,12 @@ const Chat = {
     }
 
     const sorted = Array.from(chatMap.entries()).sort((a, b) => b[1].time - a[1].time);
-    el.innerHTML = '<div class="list">' + sorted.map(([pin, lastMsg]) => {
-      const name = Contacts.getName(pin);
+    el.innerHTML = '<div class="list">' + sorted.map(([flinkNumber, lastMsg]) => {
+      const name = Contacts.getName(flinkNumber);
       const subtitle = lastMsg.type === 'text' ? lastMsg.content : lastMsg.type === 'image' ? 'Photo' : lastMsg.type === 'video' ? 'Video' : lastMsg.type === 'audio' ? 'Voice note' : 'File';
-      const unread = this.messages.filter(m => m.from === pin && m.to === Auth.getProfile().pin && !m.read).length;
+      const unread = this.messages.filter(m => m.from === flinkNumber && m.to === Auth.getProfile().flinkNumber && !m.read).length;
       return `
-      <div class="list-item" onclick="Chat.open('${pin}')">
+      <div class="list-item" onclick="Chat.open('${flinkNumber}')">
         <div class="list-item-avatar">${Utils.getInitials(name)}<div class="status-dot ${API.isConnected ? 'online' : 'offline'}"></div></div>
         <div class="list-item-info">
           <div class="list-item-title">${Utils.escapeHtml(name)}</div>
@@ -43,28 +43,28 @@ const Chat = {
     `}).join('') + '</div>';
   },
 
-  open(pin) {
-    this.currentPin = pin;
-    const name = Contacts.getName(pin);
+  open(flinkNumber) {
+    this.currentFlinkNumber = flinkNumber;
+    const name = Contacts.getName(flinkNumber);
     document.getElementById('chat-name').textContent = name;
     document.getElementById('chat-avatar').textContent = Utils.getInitials(name);
     document.getElementById('chat-status').textContent = 'online';
     document.getElementById('chat-messages').innerHTML = '';
     UI.showScreen('chat');
-    this.loadMessages(pin);
-    this.markRead(pin);
+    this.loadMessages(flinkNumber);
+    this.markRead(flinkNumber);
   },
 
-  async loadMessages(pin) {
-    const myPin = Auth.getProfile().pin;
-    const msgs = this.messages.filter(m => !m.groupId && ((m.from === myPin && m.to === pin) || (m.from === pin && m.to === myPin))).sort((a, b) => a.time - b.time);
+  async loadMessages(flinkNumber) {
+    const myFlinkNumber = Auth.getProfile().flinkNumber;
+    const msgs = this.messages.filter(m => !m.groupId && ((m.from === myFlinkNumber && m.to === flinkNumber) || (m.from === flinkNumber && m.to === myFlinkNumber))).sort((a, b) => a.time - b.time);
     msgs.forEach(m => this.renderMessage(m));
     this.scrollToBottom();
   },
 
   renderMessage(msg) {
     const el = document.getElementById('chat-messages');
-    const isMe = msg.from === Auth.getProfile().pin;
+    const isMe = msg.from === Auth.getProfile().flinkNumber;
     const html = this.buildMessageHTML(msg, isMe);
     el.insertAdjacentHTML('beforeend', html);
     this.scrollToBottom();
@@ -102,14 +102,14 @@ const Chat = {
   async sendText() {
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
-    if (!text || !this.currentPin) return;
+    if (!text || !this.currentFlinkNumber) return;
     input.value = '';
 
-    const myPin = Auth.getProfile().pin;
+    const myFlinkNumber = Auth.getProfile().flinkNumber;
     const msg = {
       id: Utils.generateId(),
-      from: myPin,
-      to: this.currentPin,
+      from: myFlinkNumber,
+      to: this.currentFlinkNumber,
       type: 'text',
       content: text,
       time: Date.now(),
@@ -127,12 +127,12 @@ const Chat = {
   },
 
   async sendMedia(type, content, extra = {}) {
-    if (!this.currentPin) return;
-    const myPin = Auth.getProfile().pin;
+    if (!this.currentFlinkNumber) return;
+    const myFlinkNumber = Auth.getProfile().flinkNumber;
     const msg = {
       id: Utils.generateId(),
-      from: myPin,
-      to: this.currentPin,
+      from: myFlinkNumber,
+      to: this.currentFlinkNumber,
       type,
       content,
       time: Date.now(),
@@ -156,7 +156,7 @@ const Chat = {
     const m = {
       id: payload.id || Utils.generateId(),
       from: msg.from,
-      to: Auth.getProfile().pin,
+      to: Auth.getProfile().flinkNumber,
       type: payload.type || 'text',
       content: payload.content,
       time: payload.time || Date.now(),
@@ -168,7 +168,7 @@ const Chat = {
     await Storage.set('messages', m);
     this.messages.push(m);
 
-    if (this.currentPin === m.from) {
+    if (this.currentFlinkNumber === m.from) {
       this.renderMessage(m);
       this.markRead(m.from);
     } else {
@@ -177,9 +177,9 @@ const Chat = {
     }
   },
 
-  async markRead(pin) {
-    const myPin = Auth.getProfile().pin;
-    const unread = this.messages.filter(m => m.from === pin && m.to === myPin && !m.read);
+  async markRead(flinkNumber) {
+    const myFlinkNumber = Auth.getProfile().flinkNumber;
+    const unread = this.messages.filter(m => m.from === flinkNumber && m.to === myFlinkNumber && !m.read);
     for (const m of unread) {
       m.read = true;
       await Storage.set('messages', m);
@@ -197,6 +197,6 @@ const Chat = {
   },
 
   openFromProfile() {
-    if (Contacts.currentPin) this.open(Contacts.currentPin);
+    if (Contacts.currentFlinkNumber) this.open(Contacts.currentFlinkNumber);
   }
 };

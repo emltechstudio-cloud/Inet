@@ -4,7 +4,7 @@ const Auth = {
   async init() {
     await Storage.init();
     this.profile = await Storage.getProfile();
-    if (this.profile && this.profile.pin && this.profile.deviceId) {
+    if (this.profile && this.profile.flinkNumber && this.profile.deviceId) {
       const valid = await this.validate();
       if (valid) {
         await this.enterApp();
@@ -16,52 +16,45 @@ const Auth = {
 
   async validate() {
     try {
-      await API.simWhoami(this.profile.pin, this.profile.deviceId);
-      return true;
+      const data = await API.getMe(`Bearer ${this.profile.accessToken}`);
+      return data.success;
     } catch (e) {
       return false;
     }
   },
 
-  async createSIM() {
+  async createAccount() {
     UI.showScreen('auth-create');
-    document.getElementById('create-sim-status').textContent = 'Contacting iNet servers...';
+    document.getElementById('create-sim-status').textContent = 'Creating your Flink account...';
+    
     try {
-      const data = await API.simNew();
-      this.profile = {
-        pin: data.net_number,
-        deviceId: data.device_id,
-        vapidKey: data.vapid_public_key,
-        createdAt: Date.now()
-      };
-      await Storage.saveProfile(this.profile);
-      await this.registerFingerprint();
-      document.getElementById('new-sim-pin').textContent = data.net_number;
-      document.getElementById('create-sim-status').textContent = 'Your new iNet number';
-      document.getElementById('new-sim-display').style.display = 'block';
+      // Generate device ID
+      const deviceId = crypto.randomUUID();
+      const simId = crypto.randomUUID();
+      const password = Math.random().toString(36).substring(2, 15);
+      
+      const data = await API.createAccount(password, deviceId, simId);
+      
+      if (data.success) {
+        this.profile = {
+          flinkNumber: data.flink_number,
+          deviceId: deviceId,
+          simId: simId,
+          password: password,
+          accessToken: data.access_token,
+          createdAt: Date.now()
+        };
+        await Storage.saveProfile(this.profile);
+        
+        document.getElementById('new-flink-number').textContent = data.flink_number;
+        document.getElementById('create-sim-status').textContent = 'Your Flink Number';
+        document.getElementById('new-sim-display').style.display = 'block';
+      } else {
+        document.getElementById('create-sim-status').textContent = 'Error creating account';
+      }
     } catch (e) {
       document.getElementById('create-sim-status').textContent = 'Error: ' + e.message;
     }
-  },
-
-  async registerFingerprint() {
-    try {
-      const fp = await Utils.getDeviceFingerprint();
-      await API.deviceRegister(this.profile.pin, this.profile.deviceId, fp);
-    } catch (e) {
-      console.error('Fingerprint registration failed:', e);
-    }
-  },
-
-  downloadSIM() {
-    if (!this.profile) return;
-    const blob = new Blob([JSON.stringify(this.profile, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `inet-${this.profile.pin}.sim.inet`;
-    a.click();
-    URL.revokeObjectURL(url);
   },
 
   showLoadSIM() {
@@ -74,13 +67,23 @@ const Auth = {
 
   async fingerprintLogin() {
     try {
-      const fp = await Utils.getDeviceFingerprint();
-      const data = await API.deviceLookup(fp);
-      if (data.net_number) {
-        document.getElementById('load-sim-pin').value = data.net_number;
-        await this.loadSIM();
+      const deviceId = localStorage.getItem('flink_device_id');
+      if (!deviceId) {
+        UI.toast('No Flink account found on this device');
+        return;
+      }
+      const data = await API.continueWithDevice(deviceId);
+      if (data.success) {
+        this.profile = {
+          flinkNumber: data.flink_number,
+          deviceId: deviceId,
+          accessToken: data.access_token,
+          createdAt: Date.now()
+        };
+        await Storage.saveProfile(this.profile);
+        await this.enterApp();
       } else {
-        UI.toast('No SIM found on this device');
+        UI.toast('Device not recognized');
       }
     } catch (e) {
       UI.toast('Device not recognized');
@@ -88,37 +91,42 @@ const Auth = {
   },
 
   async loadSIM() {
-    const pin = document.getElementById('load-sim-pin').value.trim();
-    if (!pin || pin.length !== 6) {
-      UI.toast('Enter a valid 6-digit PIN');
+    const flinkNumber = document.getElementById('load-flink-number').value.trim();
+    if (!flinkNumber || flinkNumber.length !== 6) {
+      UI.toast('Enter a valid 6-digit Flink number');
       return;
     }
+    
     try {
-      const data = await API.simWhoami(pin, this.profile?.deviceId || 'unknown');
-      // If whoami succeeds with unknown device, we need to activate
-      if (data.active) {
+      const password = prompt('Enter your Flink password:');
+      if (!password) return;
+      
+      const data = await API.continueWithPassword(flinkNumber, password);
+      if (data.success) {
+        const deviceId = crypto.randomUUID();
         this.profile = {
-          pin: data.net_number,
-          deviceId: this.profile?.deviceId || crypto.randomUUID(),
+          flinkNumber: flinkNumber,
+          deviceId: deviceId,
+          accessToken: data.access_token,
           createdAt: Date.now()
         };
         await Storage.saveProfile(this.profile);
-        await API.simActivate(pin, this.profile.deviceId);
-        await this.registerFingerprint();
+        await this.registerDevice();
         await this.enterApp();
+      } else {
+        UI.toast('Invalid Flink number or password');
       }
     } catch (e) {
-      // Try to activate with new device
-      const deviceId = crypto.randomUUID();
-      try {
-        await API.simActivate(pin, deviceId);
-        this.profile = { pin, deviceId, createdAt: Date.now() };
-        await Storage.saveProfile(this.profile);
-        await this.registerFingerprint();
-        await this.enterApp();
-      } catch (e2) {
-        UI.toast('Invalid PIN or activation failed');
-      }
+      UI.toast('Invalid Flink number or password');
+    }
+  },
+
+  async registerDevice() {
+    try {
+      const fp = await Utils.getDeviceFingerprint();
+      await API.signSIM(this.profile.flinkNumber, this.profile.simId || this.profile.deviceId, { device_fingerprint: fp });
+    } catch (e) {
+      console.error('Device registration failed:', e);
     }
   },
 
@@ -132,20 +140,42 @@ const Auth = {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      if (data.pin && data.deviceId) {
+      if (data.flinkNumber && data.deviceId) {
         this.profile = data;
         await Storage.saveProfile(this.profile);
         await this.enterApp();
       } else {
-        UI.toast('Invalid SIM file');
+        UI.toast('Invalid Flink SIM file');
       }
     } catch (e) {
-      UI.toast('Could not read SIM file');
+      UI.toast('Could not read Flink SIM file');
     }
+  },
+
+  downloadSIM() {
+    if (!this.profile) return;
+    const simData = {
+      flinkNumber: this.profile.flinkNumber,
+      deviceId: this.profile.deviceId,
+      simId: this.profile.simId,
+      password: this.profile.password,
+      createdAt: this.profile.createdAt
+    };
+    const blob = new Blob([JSON.stringify(simData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `flink-${this.profile.flinkNumber}.sim.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   },
 
   async enterApp() {
     if (!this.profile) return;
+    
+    // Save device ID for fingerprint login
+    localStorage.setItem('flink_device_id', this.profile.deviceId);
+    
     UI.showScreen('chats');
     UI.showNav(true);
     await App.init();
@@ -153,5 +183,17 @@ const Auth = {
 
   getProfile() {
     return this.profile;
+  },
+
+  async logout() {
+    if (!confirm('Logout and clear all data?')) return;
+    API.disconnect();
+    await Storage.clearProfile();
+    await Storage.clear('messages');
+    await Storage.clear('contacts');
+    await Storage.clear('groups');
+    await Storage.clear('call_log');
+    localStorage.removeItem('flink_device_id');
+    location.reload();
   }
 };

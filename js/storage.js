@@ -11,7 +11,7 @@ const Storage = {
       req.onupgradeneeded = (e) => {
         const db = e.target.result;
         if (!db.objectStoreNames.contains('messages')) db.createObjectStore('messages', { keyPath: 'id' });
-        if (!db.objectStoreNames.contains('contacts')) db.createObjectStore('contacts', { keyPath: 'pin' });
+        if (!db.objectStoreNames.contains('contacts')) db.createObjectStore('contacts', { keyPath: 'flinkNumber' });
         if (!db.objectStoreNames.contains('groups')) db.createObjectStore('groups', { keyPath: 'id' });
         if (!db.objectStoreNames.contains('call_log')) db.createObjectStore('call_log', { keyPath: 'id' });
         if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });

@@ -1,276 +1,615 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#7B1535">
-<meta name="description" content="iNet - Your digital SIM. Private calls, chats, and identity. No phone number needed. Just a PIN.">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>iNet - Your Digital SIM</title>
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--wine:#7B1535;--wine-deep:#5C0F28;--wine-soft:#9E1F45;--wine-pale:#F5E8EC;--wine-mist:#FAF3F5;--white:#FFFFFF;--bg:#F7F2F4;--surface:#FFFFFF;--border:#EDE0E4;--text:#180910;--text-2:#7A5865;--text-3:#B99AAA;--green:#22C55E;--blue:#3B82F6;--shadow-sm:0 1px 4px rgba(123,21,53,.08);--shadow-md:0 4px 16px rgba(123,21,53,.12);--shadow-lg:0 12px 40px rgba(123,21,53,.18);--shadow-xl:0 20px 60px rgba(123,21,53,.22);--r-sm:10px;--r-md:16px;--r-lg:22px;--r-xl:28px;--font-d:'Sora',sans-serif;--font-b:'DM Sans',sans-serif;}
-html{scroll-behavior:smooth}body{font-family:var(--font-b);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;overflow-x:hidden}
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px;transition:all .3s}
-.nav-inner{max-width:1100px;margin:0 auto;height:64px;display:flex;align-items:center;gap:12px}
-.nav-logo{width:36px;height:36px;background:var(--wine);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm)}
-.nav-logo svg{width:20px;height:20px;color:#fff}
-.nav-brand{font-family:var(--font-d);font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px}
-.nav-brand span{color:var(--text-3);font-weight:400;font-size:13px;margin-left:4px}
-.nav-links{margin-left:auto;display:flex;align-items:center;gap:8px}
-.nav-link{padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;color:var(--text-2);text-decoration:none;transition:all .15s}
-.nav-link:hover{color:var(--wine);background:var(--wine-pale)}
-.nav-link.primary{background:var(--wine);color:#fff;box-shadow:0 2px 8px rgba(123,21,53,.25)}
-.nav-link.primary:hover{background:var(--wine-deep);transform:translateY(-1px)}
-.nav-menu-btn{display:none;width:36px;height:36px;border-radius:50%;align-items:center;justify-content:center;background:var(--wine-mist);border:none;color:var(--wine);cursor:pointer}
-.hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:100px 24px 60px;overflow:hidden}
-.hero-bg{position:absolute;inset:0;z-index:0}
-.hero-bg::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(123,21,53,.08) 0%,transparent 60%)}
-.hero-bg::after{content:'';position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(to top,var(--bg),transparent)}
-.hero-particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.particle{position:absolute;border-radius:50%;background:var(--wine);opacity:.06;animation:float 8s ease-in-out infinite}
-@keyframes float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-30px) scale(1.1)}}
-.hero-inner{position:relative;z-index:1;max-width:720px;text-align:center}
-.hero-badge{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:var(--wine-pale);border:1.5px solid var(--border);border-radius:30px;font-size:12px;font-weight:600;color:var(--wine);margin-bottom:28px;animation:fadeUp .6s ease-out both}
-.hero-badge svg{width:14px;height:14px}
-.hero h1{font-family:var(--font-d);font-size:clamp(36px,6vw,64px);font-weight:800;color:var(--text);letter-spacing:-2px;line-height:1.1;margin-bottom:16px;animation:fadeUp .6s .1s ease-out both}
-.hero h1 span{color:var(--wine);position:relative}
-.hero h1 span::after{content:'';position:absolute;bottom:2px;left:0;right:0;height:8px;background:var(--wine-pale);z-index:-1;border-radius:4px}
-.hero p{font-size:clamp(16px,2.5vw,20px);color:var(--text-2);max-width:520px;margin:0 auto 36px;line-height:1.7;animation:fadeUp .6s .2s ease-out both}
-.hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;animation:fadeUp .6s .3s ease-out both}
-.hero-btn{height:54px;padding:0 28px;border-radius:var(--r-md);font-family:var(--font-d);font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:8px;text-decoration:none;transition:all .15s;cursor:pointer;border:none}
-.hero-btn.primary{background:var(--wine);color:#fff;box-shadow:var(--shadow-lg)}
-.hero-btn.primary:hover{transform:translateY(-2px);box-shadow:var(--shadow-xl)}
-.hero-btn.primary:active{transform:scale(.98)}
-.hero-btn.ghost{background:var(--white);color:var(--text);border:1.5px solid var(--border);box-shadow:var(--shadow-sm)}
-.hero-btn.ghost:hover{border-color:var(--wine);color:var(--wine);background:var(--wine-pale)}
-.hero-btn svg{width:20px;height:20px}
-.phone-mock{position:relative;width:280px;height:560px;margin:40px auto 0;background:var(--surface);border-radius:36px;border:8px solid var(--text);box-shadow:var(--shadow-xl);overflow:hidden;animation:fadeUp .8s .4s ease-out both}
-.phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:28px;background:var(--text);border-radius:0 0 16px 16px;z-index:5}
-.phone-screen{padding:40px 16px 16px;height:100%;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
-.phone-header{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--border)}
-.phone-avatar{width:36px;height:36px;border-radius:50%;background:var(--wine);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:14px;font-weight:700;color:#fff}
-.phone-info{flex:1}
-.phone-name{font-size:13px;font-weight:700}
-.phone-status{font-size:10px;color:var(--text-3)}
-.phone-bubble{max-width:80%;padding:10px 14px;border-radius:16px;font-size:12px;line-height:1.4;animation:popIn .4s ease-out both}
-.phone-bubble.me{align-self:flex-end;background:var(--wine);color:#fff;border-bottom-right-radius:4px}
-.phone-bubble.them{align-self:flex-start;background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:4px}
-.phone-bubble:nth-child(3){animation-delay:.1s}.phone-bubble:nth-child(4){animation-delay:.2s}.phone-bubble:nth-child(5){animation-delay:.3s}.phone-bubble:nth-child(6){animation-delay:.4s}
-@keyframes popIn{from{opacity:0;transform:scale(.9) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
-.features{padding:80px 24px;background:var(--surface);border-top:1px solid var(--border)}
-.features-inner{max-width:1100px;margin:0 auto}
-.features-header{text-align:center;margin-bottom:48px}
-.features-header h2{font-family:var(--font-d);font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-1px;margin-bottom:10px}
-.features-header p{font-size:16px;color:var(--text-2);max-width:480px;margin:0 auto}
-.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
-.feature-card{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:28px;transition:all .2s}
-.feature-card:hover{border-color:var(--wine);transform:translateY(-4px);box-shadow:var(--shadow-md)}
-.feature-icon{width:48px;height:48px;border-radius:14px;background:var(--wine-pale);display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:var(--wine)}
-.feature-icon svg{width:24px;height:24px}
-.feature-card h3{font-family:var(--font-d);font-size:17px;font-weight:700;margin-bottom:6px}
-.feature-card p{font-size:14px;color:var(--text-2);line-height:1.6}
-.how{padding:80px 24px;background:var(--bg)}
-.how-inner{max-width:900px;margin:0 auto}
-.how-header{text-align:center;margin-bottom:48px}
-.how-header h2{font-family:var(--font-d);font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-1px;margin-bottom:10px}
-.how-header p{font-size:16px;color:var(--text-2)}
-.how-steps{display:flex;flex-direction:column;gap:16px}
-.how-step{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:24px 28px;display:flex;gap:20px;align-items:flex-start;transition:all .15s}
-.how-step:hover{border-color:var(--wine)}
-.how-num{width:44px;height:44px;border-radius:50%;background:var(--wine);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:16px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 4px 12px rgba(123,21,53,.3)}
-.how-content h4{font-family:var(--font-d);font-size:17px;font-weight:700;margin-bottom:4px}
-.how-content p{font-size:14px;color:var(--text-2);line-height:1.6}
-.dev-cta{padding:80px 24px;background:linear-gradient(135deg,var(--wine-deep),var(--wine));text-align:center;position:relative;overflow:hidden}
-.dev-cta::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 20%,rgba(255,255,255,.08) 0%,transparent 50%)}
-.dev-cta-inner{position:relative;z-index:1;max-width:640px;margin:0 auto}
-.dev-cta h2{font-family:var(--font-d);font-size:clamp(28px,4vw,40px);font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:12px}
-.dev-cta p{font-size:16px;color:rgba(255,255,255,.75);margin-bottom:28px;line-height:1.7}
-.dev-cta .hero-btn{background:#fff;color:var(--wine);box-shadow:0 4px 20px rgba(0,0,0,.2)}
-.dev-cta .hero-btn:hover{background:var(--wine-pale);transform:translateY(-2px)}
-.footer{padding:40px 24px;text-align:center;border-top:1px solid var(--border);background:var(--surface)}
-.footer-inner{max-width:1100px;margin:0 auto}
-.footer-links{display:flex;gap:24px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
-.footer-links a{color:var(--text-2);font-size:14px;font-weight:500;text-decoration:none;transition:color .15s}
-.footer-links a:hover{color:var(--wine)}
-.footer p{font-size:12px;color:var(--text-3)}
-@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:768px){.nav-links{display:none}.nav-menu-btn{display:flex}.hero{padding-top:80px}.phone-mock{width:240px;height:480px}.how-step{flex-direction:column;gap:12px}.hero-cta{flex-direction:column;align-items:center}.hero-btn{width:100%;max-width:280px;justify-content:center}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#17212B">
+    <meta name="description" content="Flink - Lightweight, privacy-first communication. Connect when you want to talk. Talk directly. Leave.">
+    <title>Flink - Intentional Communication</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #5D9CEC;
+            --primary-light: #76A8EC;
+            --primary-dark: #3A7BC8;
+            --bg: #17212B;
+            --surface: #1E293B;
+            --surface-light: #2A3441;
+            --text: #FFFFFF;
+            --text-secondary: #A0ACB8;
+            --text-muted: #6B7A8F;
+            --border: #2A3441;
+            --gradient: linear-gradient(135deg, #1E293B 0%, #17212B 100%);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .landing {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 80px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(93, 156, 236, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        
+        .hero-logo {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 32px;
+            box-shadow: 0 20px 60px rgba(93, 156, 236, 0.3);
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .hero-logo svg {
+            width: 50px;
+            height: 50px;
+            color: white;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero h1 span {
+            color: var(--text);
+        }
+        
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+        
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(93, 156, 236, 0.3);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(93, 156, 236, 0.4);
+        }
+        
+        .cta-button svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        /* Philosophy Section */
+        .philosophy {
+            padding: 80px 0;
+            text-align: center;
+        }
+        
+        .philosophy h2 {
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+        
+        .philosophy p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .philosophy-steps {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 60px;
+            flex-wrap: wrap;
+        }
+        
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            max-width: 200px;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        
+        .step h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        
+        .step p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 80px 0;
+        }
+        
+        .features h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 60px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+        }
+        
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 40px rgba(93, 156, 236, 0.1);
+        }
+        
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .feature-icon svg {
+            width: 30px;
+            height: 30px;
+            color: white;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 12px;
+        }
+        
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+        
+        /* Comparison Section */
+        .comparison {
+            padding: 80px 0;
+            text-align: center;
+        }
+        
+        .comparison h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        
+        .comparison p {
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+        }
+        
+        .comparison-table {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 32px;
+            border: 1px solid var(--border);
+        }
+        
+        .comparison-header {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: subgrid;
+            gap: 16px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+        
+        .comparison-header > div {
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .comparison-row {
+            display: contents;
+        }
+        
+        .comparison-cell {
+            text-align: center;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .comparison-cell:last-child {
+            border-right: none;
+        }
+        
+        .check-icon {
+            color: #00C853;
+            font-size: 1.5rem;
+        }
+        
+        .x-icon {
+            color: #FF1744;
+            font-size: 1.5rem;
+        }
+        
+        /* Footer */
+        .footer {
+            padding: 60px 0;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            margin-top: 80px;
+        }
+        
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .footer-logo svg {
+            width: 32px;
+            height: 32px;
+            color: var(--primary);
+        }
+        
+        .footer-logo span {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .footer p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 20px;
+        }
+        
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+            
+            .comparison-table {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-header {
+                display: none;
+            }
+            
+            .comparison-cell::before {
+                content: attr(data-label);
+                display: block;
+                font-weight: 600;
+                margin-bottom: 8px;
+                color: var(--text);
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.8s ease forwards;
+        }
+        
+        .animate-delay-1 { animation-delay: 0.2s; }
+        .animate-delay-2 { animation-delay: 0.4s; }
+        .animate-delay-3 { animation-delay: 0.6s; }
+    </style>
 </head>
 <body>
+    <div class="landing">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+            </div>
+            <h1>Flink<span>.</span> <br>Connect Intentionally</h1>
+            <p>Privacy-first communication designed for meaningful conversations. No clutter, no tracking, just direct connection.</p>
+            <a href="app.html" class="cta-button">
+                <span>Open Flink</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                    <polyline points="12 5 19 12 12 19"/>
+                </svg>
+            </a>
+        </section>
 
-<nav class="nav">
-  <div class="nav-inner">
-    <div class="nav-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M1 6C5.5 1.5 18.5 1.5 23 6"/><path d="M5 10c2.5-2.5 11.5-2.5 14 0"/>
-        <path d="M9 14c1-1 5-1 6 0"/><circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/>
-      </svg>
-    </div>
-    <div class="nav-brand">iNet <span>v2</span></div>
-    <div class="nav-links">
-      <a href="#features" class="nav-link">Features</a>
-      <a href="#how" class="nav-link">How it works</a>
-      <a href="dev.html" class="nav-link">Developers</a>
-      <a href="install.html" class="nav-link">Install</a>
-      <a href="app.html" class="nav-link primary">Open App</a>
-    </div>
-    <button class="nav-menu-btn" onclick="toggleMenu()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
-  </div>
-</nav>
+        <!-- Philosophy Section -->
+        <section class="philosophy">
+            <h2 class="animate-fade-in-up">A Different Way to Communicate</h2>
+            <p class="animate-fade-in-up animate-delay-1">Flink is built on a simple philosophy: communication should be intentional, private, and lightweight.</p>
+            
+            <div class="philosophy-steps">
+                <div class="step animate-fade-in-up animate-delay-2">
+                    <div class="step-number">1</div>
+                    <h3>Know Their Number</h3>
+                    <p>Every user has a unique 6-digit Flink number</p>
+                </div>
+                <div class="step animate-fade-in-up animate-delay-2">
+                    <div class="step-number">2</div>
+                    <h3>Send a Request</h3>
+                    <p>Ping them to start a conversation</p>
+                </div>
+                <div class="step animate-fade-in-up animate-delay-2">
+                    <div class="step-number">3</div>
+                    <h3>They Decide</h3>
+                    <p>The recipient chooses to accept or decline</p>
+                </div>
+                <div class="step animate-fade-in-up animate-delay-3">
+                    <div class="step-number">4</div>
+                    <h3>Connect Directly</h3>
+                    <p>Peer-to-peer communication, no middleman</p>
+                </div>
+            </div>
+        </section>
 
-<section class="hero">
-  <div class="hero-bg">
-    <div class="hero-particles">
-      <div class="particle" style="width:300px;height:300px;top:10%;left:-5%;animation-delay:0s"></div>
-      <div class="particle" style="width:200px;height:200px;top:60%;right:-5%;animation-delay:2s"></div>
-      <div class="particle" style="width:150px;height:150px;top:30%;right:20%;animation-delay:4s"></div>
-    </div>
-  </div>
-  <div class="hero-inner">
-    <div class="hero-badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      End-to-End Encrypted
-    </div>
-    <h1>Your digital SIM.<br>Your <span>identity</span>.</h1>
-    <p>Private calls, chats, and group calls. No phone number. No email. Just a 6-digit PIN that belongs to you.</p>
-    <div class="hero-cta">
-      <a href="app.html" class="hero-btn primary">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        Open Web App
-      </a>
-      <a href="install.html" class="hero-btn ghost">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Install App
-      </a>
-    </div>
-    <div class="phone-mock">
-      <div class="phone-notch"></div>
-      <div class="phone-screen">
-        <div class="phone-header">
-          <div class="phone-avatar">A</div>
-          <div class="phone-info"><div class="phone-name">Alex</div><div class="phone-status">Online</div></div>
-        </div>
-        <div class="phone-bubble them">Hey! Want to join the group call?</div>
-        <div class="phone-bubble me">Sure, send me the room link</div>
-        <div class="phone-bubble them">Room: KX9M2L3</div>
-        <div class="phone-bubble me">Joining now</div>
-        <div class="phone-bubble them" style="background:var(--wine-pale);color:var(--wine);border-color:var(--wine)">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-          Video call started
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+        <!-- Features Section -->
+        <section class="features">
+            <h2 class="animate-fade-in-up">Built for Privacy, Designed for You</h2>
+            <div class="features-grid">
+                <div class="feature-card animate-fade-in-up">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <h3>Your Identity, Your Control</h3>
+                    <p>Three ways to access your account: device, Flink SIM, or password. No email required, no phone number needed.</p>
+                </div>
+                
+                <div class="feature-card animate-fade-in-up animate-delay-1">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </div>
+                    <h3>No Permanent Cloud Storage</h3>
+                    <p>Messages, calls, and media stay on your device. We don't store your conversations in the cloud.</p>
+                </div>
+                
+                <div class="feature-card animate-fade-in-up animate-delay-2">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                        </svg>
+                    </div>
+                    <h3>WebRTC Powered</h3>
+                    <p>Voice and video calls use direct peer-to-peer connections. Once connected, the backend steps out.</p>
+                </div>
+                
+                <div class="feature-card animate-fade-in-up animate-delay-1">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <h3>Group Communication</h3>
+                    <p>Create groups with Flink numbers. Voice, video, and chat - all with the same privacy-first approach.</p>
+                </div>
+                
+                <div class="feature-card animate-fade-in-up animate-delay-2">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                    </div>
+                    <h3>Web Push Notifications</h3>
+                    <p>Get notified of incoming pings and calls, even when the app is closed.</p>
+                </div>
+                
+                <div class="feature-card animate-fade-in-up animate-delay-3">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="8" x2="2" y2="8"/>
+                            <line x1="16" y1="16" x2="2" y2="16"/>
+                            <line x1="8" y1="2" x2="8" y2="18"/>
+                        </svg>
+                    </div>
+                    <h3>Link-Based Rooms</h3>
+                    <p>Create shareable rooms for video, voice, or chat. Guests can join without a Flink number.</p>
+                </div>
+            </div>
+        </section>
 
-<section class="features" id="features">
-  <div class="features-inner">
-    <div class="features-header">
-      <h2>Why iNet?</h2>
-      <p>Built for privacy. Built for people. Built to be simple.</p>
-    </div>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M8 5v14M16 5v14"/></svg></div>
-        <h3>Digital SIM</h3><p>Your identity is a 6-digit PIN, not a phone number. Create it in seconds. Use it anywhere.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
-        <h3>Private Chat</h3><p>End-to-end encrypted messaging. Photos, videos, voice notes, and stickers. No logs kept.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
-        <h3>Audio & Video Calls</h3><p>Peer-to-peer calls with no middleman. Group calls with up to 8 people. Crystal clear quality.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
-        <h3>Group Rooms</h3><p>Create a room, share the link, and anyone can join. No account needed for guests.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
-        <h3>No Data Stored</h3><p>Your SIM file is encrypted and stays on your device. Messages are peer-to-peer or stored only until delivered.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg></div>
-        <h3>Push Notifications</h3><p>Get notified for calls, messages, and group invites - even when the app is closed.</p>
-      </div>
-    </div>
-  </div>
-</section>
+        <!-- Comparison Section -->
+        <section class="comparison">
+            <h2 class="animate-fade-in-up">What Makes Flink Different</h2>
+            <p class="animate-fade-in-up animate-delay-1">We intentionally sacrifice some convenience for privacy and simplicity.</p>
+            
+            <div class="comparison-table animate-fade-in-up animate-delay-2">
+                <div class="comparison-header">
+                    <div></div>
+                    <div>Flink</div>
+                    <div>Traditional Apps</div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-cell" data-label="Feature">Permanent message history</div>
+                    <div class="comparison-cell"><span class="x-icon">✕</span></div>
+                    <div class="comparison-cell"><span class="check-icon">✓</span></div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-cell" data-label="Feature">Online status tracking</div>
+                    <div class="comparison-cell"><span class="x-icon">✕</span></div>
+                    <div class="comparison-cell"><span class="check-icon">✓</span></div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-cell" data-label="Feature">Cloud media storage</div>
+                    <div class="comparison-cell"><span class="x-icon">✕</span></div>
+                    <div class="comparison-cell"><span class="check-icon">✓</span></div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-cell" data-label="Feature">Phone/email required</div>
+                    <div class="comparison-cell"><span class="x-icon">✕</span></div>
+                    <div class="comparison-cell"><span class="check-icon">✓</span></div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-cell" data-label="Feature">Peer-to-peer calls</div>
+                    <div class="comparison-cell"><span class="check-icon">✓</span></div>
+                    <div class="comparison-cell"><span class="x-icon">✕</span></div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-cell" data-label="Feature">Lightweight & fast</div>
+                    <div class="comparison-cell"><span class="check-icon">✓</span></div>
+                    <div class="comparison-cell"><span class="x-icon">✕</span></div>
+                </div>
+                <div class="comparison-row">
+                    <div class="comparison-cell" data-label="Feature">Minimal backend</div>
+                    <div class="comparison-cell"><span class="check-icon">✓</span></div>
+                    <div class="comparison-cell"><span class="x-icon">✕</span></div>
+                </div>
+            </div>
+        </section>
 
-<section class="how" id="how">
-  <div class="how-inner">
-    <div class="how-header">
-      <h2>How it works</h2>
-      <p>Three steps. No forms. No verification. Just you.</p>
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span>Flink</span>
+            </div>
+            <p>Connect when you want to talk. Talk directly. Leave.</p>
+            <div class="footer-links">
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">GitHub</a>
+            </div>
+        </footer>
     </div>
-    <div class="how-steps">
-      <div class="how-step">
-        <div class="how-num">1</div>
-        <div class="how-content">
-          <h4>Get your SIM</h4>
-          <p>Tap "Get New SIM" and choose a password. iNet generates a unique 6-digit PIN and a device ID. Your SIM is encrypted and saved as a file you can download.</p>
-        </div>
-      </div>
-      <div class="how-step">
-        <div class="how-num">2</div>
-        <div class="how-content">
-          <h4>Add contacts or dial</h4>
-          <p>Save contacts by name and PIN, or use the dialpad to call any 6-digit number directly. If they are on iNet, the call connects instantly.</p>
-        </div>
-      </div>
-      <div class="how-step">
-        <div class="how-num">3</div>
-        <div class="how-content">
-          <h4>Chat and call</h4>
-          <p>Send messages, make audio or video calls, create group rooms. Everything is end-to-end encrypted. No phone number, no email, no tracking.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="dev-cta">
-  <div class="dev-cta-inner">
-    <h2>Build with iNet</h2>
-    <p>Add "Continue with iNet" to your app. Send OTPs. Push messages to users. Use iNet as the identity layer for your platform - no Google, no email, no passwords.</p>
-    <a href="dev.html" class="hero-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
-      Developer Portal
-    </a>
-  </div>
-</section>
-
-<footer class="footer">
-  <div class="footer-inner">
-    <div class="footer-links">
-      <a href="app.html">Open App</a>
-      <a href="install.html">Install</a>
-      <a href="dev.html">Developers</a>
-      <a href="https://huggingface.co/spaces/emltechstudio/inet-v2" target="_blank">Source</a>
-    </div>
-    <p>iNet v2 - EML Tech Studio - No data collected - No logs kept</p>
-  </div>
-</footer>
-
-<script>
-function toggleMenu(){
-  const links=document.querySelector('.nav-links');
-  if(links.style.display==='flex'){links.style.display='';links.style.position='';links.style.top='';links.style.left='';links.style.right='';links.style.background='';links.style.padding='';links.style.flexDirection='';links.style.gap='';links.style.borderBottom='';links.style.boxShadow=''}
-  else{links.style.display='flex';links.style.position='fixed';links.style.top='64px';links.style.left='0';links.style.right='0';links.style.background='rgba(255,255,255,.95)';links.style.padding='16px 24px';links.style.flexDirection='column';links.style.gap='8px';links.style.borderBottom='1px solid var(--border)';links.style.boxShadow='var(--shadow-md)'}
-}
-</script>
-
 </body>
 </html>

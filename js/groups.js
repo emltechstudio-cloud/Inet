@@ -38,8 +38,8 @@ const Groups = {
     } else {
       selectEl.innerHTML = contacts.map(c => `
         <div style="display:flex;align-items:center;gap:12px;padding:8px 0;">
-          <input type="checkbox" id="gm-${c.pin}" value="${c.pin}" style="width:18px;height:18px;accent-color:var(--primary);">
-          <label for="gm-${c.pin}" style="flex:1;cursor:pointer;">${Utils.escapeHtml(c.name)} <span style="color:var(--text-muted);font-size:13px;">(${c.pin})</span></label>
+          <input type="checkbox" id="gm-${c.flinkNumber}" value="${c.flinkNumber}" style="width:18px;height:18px;accent-color:var(--primary);">
+          <label for="gm-${c.flinkNumber}" style="flex:1;cursor:pointer;">${Utils.escapeHtml(c.name)} <span style="color:var(--text-muted);font-size:13px;">(${c.flinkNumber})</span></label>
         </div>
       `).join('');
     }
@@ -54,7 +54,7 @@ const Groups = {
     if (!name) { UI.toast('Enter a group name'); return; }
 
     const members = [];
-    const myPin = Auth.getProfile().pin;
+    const myPin = Auth.getProfile().flinkNumber;
     members.push(myPin);
     document.querySelectorAll('#group-members-select input:checked').forEach(cb => members.push(cb.value));
 
@@ -105,7 +105,7 @@ const Groups = {
 
   renderMessage(msg) {
     const el = document.getElementById('group-chat-messages');
-    const isMe = msg.from === Auth.getProfile().pin;
+    const isMe = msg.from === Auth.getProfile().flinkNumber;
     const name = isMe ? 'You' : Contacts.getName(msg.from);
     const html = this.buildMessageHTML(msg, isMe, name);
     el.insertAdjacentHTML('beforeend', html);
@@ -148,7 +148,7 @@ const Groups = {
     if (!text) return;
     input.value = '';
 
-    const myPin = Auth.getProfile().pin;
+    const myPin = Auth.getProfile().flinkNumber;
     const msg = {
       id: Utils.generateId(),
       groupId: this.currentId,
@@ -177,7 +177,7 @@ const Groups = {
   },
 
   async sendMedia(type, content, extra = {}) {
-    const myPin = Auth.getProfile().pin;
+    const myPin = Auth.getProfile().flinkNumber;
     const msg = {
       id: Utils.generateId(),
       groupId: this.currentId,
@@ -212,7 +212,7 @@ const Groups = {
     document.getElementById('group-info-name').textContent = g.name;
     document.getElementById('group-info-desc').textContent = g.description || 'No description';
     document.getElementById('group-info-members').innerHTML = g.members.map(m => {
-      const name = m === Auth.getProfile().pin ? 'You' : Contacts.getName(m);
+      const name = m === Auth.getProfile().flinkNumber ? 'You' : Contacts.getName(m);
       const role = m === g.createdBy ? '<span class="member-role">Admin</span>' : '';
       return `<div class="member-item"><div class="list-item-avatar" style="width:36px;height:36px;font-size:14px;">${Utils.getInitials(name)}</div><div style="flex:1;">${Utils.escapeHtml(name)} ${role}</div></div>`;
     }).join('');
@@ -223,7 +223,7 @@ const Groups = {
     if (!confirm('Leave this group?')) return;
     const g = this.list.find(x => x.id === this.currentId);
     if (g) {
-      g.members = g.members.filter(m => m !== Auth.getProfile().pin);
+      g.members = g.members.filter(m => m !== Auth.getProfile().flinkNumber);
       await Storage.set('groups', g);
       if (g.members.length === 0) {
         await Storage.delete('groups', this.currentId);

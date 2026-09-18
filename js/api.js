@@ -1,6 +1,6 @@
 const API = {
   BASE_URL: 'https://emltechstudio-inet-v2.hf.space',
-  WS_URL: 'wss://emltechstudio-inet-v2.hf.space/ws',
+  WS_URL: 'wss://emltechstudio-inet-v2.hf.space',
   ws: null,
   reconnectTimer: null,
   pingInterval: null,
@@ -24,29 +24,119 @@ const API = {
     return res.json();
   },
 
-  // SIM endpoints
-  simNew() { return this.request('/sim/new', { method: 'POST' }); },
-  simActivate(pin, deviceId) { return this.request('/sim/activate', { method: 'POST', body: JSON.stringify({ net_number: pin, device_id: deviceId }) }); },
-  simWhoami(pin, deviceId) { return this.request(`/sim/whoami?net_number=${pin}&device_id=${deviceId}`); },
-  simLookup(fingerprint) { return this.request('/sim/lookup', { method: 'POST', body: JSON.stringify({ fingerprint }) }); },
-  registerFingerprint(pin, deviceId, fingerprint) { return this.request('/sim/register-fingerprint', { method: 'POST', body: JSON.stringify({ net_number: pin, device_id: deviceId, fingerprint }) }); },
+  // Flink Auth endpoints
+  createAccount(password, deviceId, simId) {
+    return this.request('/flink/auth/account', {
+      method: 'POST',
+      body: JSON.stringify({ password, device_id: deviceId, sim_id: simId })
+    });
+  },
 
-  // Device endpoints
-  deviceRegister(pin, deviceId, fingerprint) { return this.request('/device/register', { method: 'POST', body: JSON.stringify({ net_number: pin, device_id: deviceId, fingerprint }) }); },
-  deviceLookup(fingerprint) { return this.request('/device/lookup', { method: 'POST', body: JSON.stringify({ fingerprint }) }); },
+  continueWithPassword(flinkNumber, password) {
+    return this.request('/flink/auth/continue/password', {
+      method: 'POST',
+      body: JSON.stringify({ flink_number: flinkNumber, password })
+    });
+  },
 
-  // Status endpoints
-  getStatus(pin) { return this.request(`/status/${pin}`); },
-  batchStatus(pins) { return this.request('/status/batch', { method: 'POST', body: JSON.stringify(pins) }); },
+  continueWithDevice(deviceId) {
+    return this.request('/flink/auth/continue/device', {
+      method: 'POST',
+      body: JSON.stringify({ device_id: deviceId })
+    });
+  },
 
-  // Push endpoints
-  subscribePush(pin, deviceId, subscription) { return this.request('/push/subscribe', { method: 'POST', body: JSON.stringify({ net_number: pin, device_id: deviceId, subscription }) }); },
-  getVapidKey() { return this.request('/push/vapid-public-key'); },
+  continueWithSIM(payload, signature) {
+    return this.request('/flink/auth/continue/sim', {
+      method: 'POST',
+      body: JSON.stringify({ payload, signature })
+    });
+  },
 
-  // WebSocket
-  connect(pin, deviceId) {
+  getSIMPublicKey() {
+    return this.request('/flink/auth/sim/public-key');
+  },
+
+  signSIM(flinkNumber, simId, metadata = {}) {
+    return this.request('/flink/auth/sim/sign', {
+      method: 'POST',
+      body: JSON.stringify({ flink_number: flinkNumber, sim_id: simId, metadata })
+    });
+  },
+
+  getMe(authorization) {
+    return this.request('/flink/auth/me', {
+      headers: { Authorization: authorization }
+    });
+  },
+
+  registerPush(flinkNumber, deviceId, subscription, authorization) {
+    return this.request('/flink/auth/push/subscribe', {
+      method: 'POST',
+      body: JSON.stringify({ flink_number: flinkNumber, device_id: deviceId, ...subscription }),
+      headers: { Authorization: authorization }
+    });
+  },
+
+  getVapidKey() {
+    return this.request('/flink/auth/push/public-key');
+  },
+
+  createGroup(name, memberNumbers, authorization) {
+    return this.request('/flink/auth/groups', {
+      method: 'POST',
+      body: JSON.stringify({ name, member_numbers: memberNumbers }),
+      headers: { Authorization: authorization }
+    });
+  },
+
+  listGroups(authorization) {
+    return this.request('/flink/auth/groups', {
+      headers: { Authorization: authorization }
+    });
+  },
+
+  addGroupMembers(groupId, memberNumbers, authorization) {
+    return this.request(`/flink/auth/groups/${groupId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ member_numbers: memberNumbers }),
+      headers: { Authorization: authorization }
+    });
+  },
+
+  removeGroupMember(groupId, flinkNumber, authorization) {
+    return this.request(`/flink/auth/groups/${groupId}/members/${flinkNumber}`, {
+      method: 'DELETE',
+      headers: { Authorization: authorization }
+    });
+  },
+
+  // Flink Signaling endpoints
+  signalingHealth() {
+    return this.request('/flink/signaling/health');
+  },
+
+  sendPing(targetFlinkNumber, mode, sessionId, authorization) {
+    return this.request('/flink/signaling/ping', {
+      method: 'POST',
+      body: JSON.stringify({ target_flink_number: targetFlinkNumber, mode, session_id: sessionId }),
+      headers: { Authorization: authorization }
+    });
+  },
+
+  sendGroupPing(groupId, mode, sessionId, authorization) {
+    return this.request('/flink/signaling/group-ping', {
+      method: 'POST',
+      body: JSON.stringify({ group_id: groupId, mode, session_id: sessionId }),
+      headers: { Authorization: authorization }
+    });
+  },
+
+  // WebSocket for signaling
+  connect(flinkNumber, deviceId, token) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) return;
-    const url = `${this.WS_URL}?net_number=${pin}&device_id=${deviceId}`;
+    const sessionId = `${flinkNumber}-${deviceId}`;
+    const url = `${this.WS_URL}/flink/signaling/ws/${sessionId}?token=${encodeURIComponent(token)}`;
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
@@ -69,7 +159,7 @@ const API = {
       this.isConnected = false;
       this.stopPing();
       this.emit('disconnected');
-      this.reconnectTimer = setTimeout(() => this.connect(pin, deviceId), 3000);
+      this.reconnectTimer = setTimeout(() => this.connect(flinkNumber, deviceId, token), 3000);
     };
 
     this.ws.onerror = (err) => {
@@ -135,6 +225,14 @@ const API = {
     }
     if (type === 'otp') {
       this.emit('otp', msg.payload);
+      return;
+    }
+    if (type === 'flink_request') {
+      this.emit('flink_request', msg);
+      return;
+    }
+    if (type === 'flink_group_request') {
+      this.emit('flink_group_request', msg);
       return;
     }
     this.emit(type, msg);

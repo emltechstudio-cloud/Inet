@@ -30,7 +30,7 @@ const Media = {
     if (file.size > this.maxFileSize * 1024 * 1024) { UI.toast("Image too large (max 10MB)"); return; }
     let dataUrl = await Utils.fileToBase64(file);
     dataUrl = await Utils.compressImage(dataUrl);
-    if (Chat.currentPin) await Chat.sendMedia("image", dataUrl);
+    if (Chat.currentFlinkNumber) await Chat.sendMedia("image", dataUrl);
     else if (Groups.currentId) await Groups.sendMedia("image", dataUrl);
   },
 
@@ -41,7 +41,7 @@ const Media = {
     if (file.size > this.maxFileSize * 1024 * 1024) { UI.toast("Video too large (max 10MB)"); return; }
     let dataUrl = await Utils.fileToBase64(file);
     dataUrl = await Utils.trimVideo(dataUrl, this.maxVideoDuration);
-    if (Chat.currentPin) await Chat.sendMedia("video", dataUrl);
+    if (Chat.currentFlinkNumber) await Chat.sendMedia("video", dataUrl);
     else if (Groups.currentId) await Groups.sendMedia("video", dataUrl);
   },
 
@@ -52,7 +52,7 @@ const Media = {
     if (file.size > this.maxFileSize * 1024 * 1024) { UI.toast("File too large (max 10MB)"); return; }
     const dataUrl = await Utils.fileToBase64(file);
     const extra = { fileName: file.name, fileSize: this.formatFileSize(file.size) };
-    if (Chat.currentPin) await Chat.sendMedia("file", dataUrl, extra);
+    if (Chat.currentFlinkNumber) await Chat.sendMedia("file", dataUrl, extra);
     else if (Groups.currentId) await Groups.sendMedia("file", dataUrl, extra);
   },
 
@@ -94,7 +94,7 @@ const Media = {
     const blob = new Blob(this.audioChunks, { type: "audio/webm" });
     if (blob.size < 1000) return;
     const dataUrl = await Utils.blobToBase64(blob);
-    if (Chat.currentPin) await Chat.sendMedia("audio", dataUrl);
+    if (Chat.currentFlinkNumber) await Chat.sendMedia("audio", dataUrl);
     else if (Groups.currentId) await Groups.sendMedia("audio", dataUrl);
   },
 
@@ -109,7 +109,7 @@ const Media = {
 
   async sendSticker(sticker) {
     UI.hideModal();
-    if (Chat.currentPin) await Chat.sendMedia("sticker", sticker);
+    if (Chat.currentFlinkNumber) await Chat.sendMedia("sticker", sticker);
     else if (Groups.currentId) await Groups.sendMedia("sticker", sticker);
   },
 
