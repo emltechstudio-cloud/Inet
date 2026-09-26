@@ -20,7 +20,7 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith("flink-static-") && key !== CACHE).map((key) => caches.delete(key))))
+    caches.keys().then((keys) => Promise.all(keys.filter((key) => key === "flink-v1" || (key.startsWith("flink-static-") && key !== CACHE)).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });

@@ -2,6 +2,14 @@ let installPrompt: BeforeInstallPromptEvent | null = null;
 
 export function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
+  if (navigator.serviceWorker.controller) {
+    let refreshed = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshed) return;
+      refreshed = true;
+      window.location.reload();
+    });
+  }
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
     installPrompt = event as BeforeInstallPromptEvent;
