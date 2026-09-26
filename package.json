@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
-    "build:pages": "npm run build && cp -a dist/. .",
+    "build:pages": "rm -rf assets && npm run build && cp -a dist/. .",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc --noEmit"
   },
