@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #f7f2f4;
+  --color-surface: #ffffff;
+  --color-elevated: #faf3f5;
+  --color-mist: #faf3f5;
+  --color-fg: #180910;
+  --color-muted: #7a5865;
+  --color-subtle: #b99aaa;
+  --color-primary: #7b1535;
+  --color-primary-2: #9a1b44;
+  --color-primary-3: #5c0f28;
+  --color-primary-fg: #fffafc;
+  --color-border: #ede0e4;
+  --color-success: #1a5e20;
+  --color-danger: #c41e3a;
+  --color-call: #180910;
+  --color-call-fg: #f7f2f4;
+
+  --font-sans: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  --shadow-soft: 0 2px 16px rgba(123, 21, 53, 0.08);
+  --shadow-lift: 0 8px 32px rgba(123, 21, 53, 0.12);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100dvh;
+    background: var(--color-bg);
+    color: var(--color-fg);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
