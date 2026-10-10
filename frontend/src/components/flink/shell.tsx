@@ -81,6 +81,14 @@ export function FlinkShell() {
                 })}
               </nav>
             )}
+            <a
+              href="https://emltechstudio.space"
+              target="_blank"
+              rel="noreferrer"
+              className="bg-surface pb-2 text-center text-[10px] text-subtle"
+            >
+              EML Tech Studio
+            </a>
           </>
         )}
       </div>
