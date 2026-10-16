@@ -1,5 +1,6 @@
 const Media = {
   mediaRecorder: null,
+  mediaStream: null,
   audioChunks: [],
   recordingStart: 0,
   recordingTimer: null,
@@ -65,11 +66,16 @@ const Media = {
   async startVoiceNote() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.mediaStream = stream;
       this.mediaRecorder = new MediaRecorder(stream);
       this.audioChunks = [];
       this.recordingStart = Date.now();
       this.mediaRecorder.ondataavailable = e => this.audioChunks.push(e.data);
-      this.mediaRecorder.onstop = () => this.finishVoiceNote();
+      this.mediaRecorder.onstop = () => {
+        this.mediaStream?.getTracks().forEach(t => t.stop());
+        this.mediaStream = null;
+        void this.finishVoiceNote();
+      };
       this.mediaRecorder.start();
       document.getElementById("recording-indicator").classList.add("active");
       this.recordingTimer = setInterval(() => {
@@ -84,9 +90,9 @@ const Media = {
 
   stopVoiceNote() {
     if (!this.mediaRecorder || this.mediaRecorder.state === "inactive") return;
-    this.mediaRecorder.stop();
-    this.mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    try { this.mediaRecorder.stop(); } catch (e) { console.warn("Voice recorder already stopped", e); }
     clearInterval(this.recordingTimer);
+    this.recordingTimer = null;
     document.getElementById("recording-indicator").classList.remove("active");
   },
 
