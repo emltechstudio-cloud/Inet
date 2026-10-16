@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, FileText, Film, Gift, ImagePlus, Mic, Pause, Phone, Play, RefreshCw, Send, Trash2, Video } from "lucide-react";
+import { ArrowLeft, FileText, Film, Mic, Pause, Phone, Play, RefreshCw, Send, Trash2, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NumberAvatar } from "./mark";
 import { useFlink } from "@/lib/flink/store";
@@ -32,6 +32,7 @@ export function ChatView() {
   const voiceStreamRef = useRef<MediaStream | null>(null);
   const voiceChunksRef = useRef<Blob[]>([]);
   const recordingFinalizedRef = useRef(false);
+  const recordingStoppingRef = useRef(false);
   const previewAudioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => bottom.current?.scrollIntoView({ behavior: "smooth" }), [messages.length, voicePreview]);
@@ -60,21 +61,36 @@ export function ChatView() {
   }
 
   function prepareVoice(file: File) {
-    if (file.size > 5_000_000) return;
-    clearVoicePreview();
-    setVoicePreview({ file, url: URL.createObjectURL(file), duration: 0 });
+    if (file.size > 5_000_000) {
+      setRecordingError("Keep voice notes under 5 MB.");
+      return;
+    }
+    const nextPreview = { file, url: URL.createObjectURL(file), duration: 0 };
+    setVoicePreview((previous) => {
+      if (previous) URL.revokeObjectURL(previous.url);
+      return nextPreview;
+    });
+    setPreviewPlaying(false);
+  }
+
+  function stopVoiceRecording() {
+    const recorder = voiceRecorderRef.current;
+    if (!recorder || recordingStoppingRef.current) return;
+    if (recorder.state !== "recording") {
+      setRecordingVoice(false);
+      return;
+    }
+    recordingStoppingRef.current = true;
+    try { recorder.stop(); } catch {
+      recordingStoppingRef.current = false;
+      setRecordingVoice(false);
+      setRecordingError("The recording could not be stopped. Please try again.");
+    }
   }
 
   async function toggleVoiceRecording() {
     if (recordingVoice) {
-      const recorder = voiceRecorderRef.current;
-      if (!recorder) {
-        setRecordingVoice(false);
-        return;
-      }
-      if (recorder.state === "recording") {
-        try { recorder.stop(); } catch { setRecordingVoice(false); }
-      }
+      stopVoiceRecording();
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
@@ -93,6 +109,7 @@ export function ChatView() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       voiceStreamRef.current = stream;
       recordingFinalizedRef.current = false;
+      recordingStoppingRef.current = false;
       const preferredMime = "audio/webm;codecs=opus";
       const mimeType = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported(preferredMime)
         ? preferredMime
@@ -105,16 +122,19 @@ export function ChatView() {
         if (recordingFinalizedRef.current) return;
         recordingFinalizedRef.current = true;
         try {
-          const blob = new Blob(voiceChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+          const chunks = voiceChunksRef.current.slice();
+          const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
           stream.getTracks().forEach((track) => track.stop());
           voiceStreamRef.current = null;
           voiceRecorderRef.current = null;
+          recordingStoppingRef.current = false;
           setRecordingVoice(false);
           if (blob.size > 0) prepareVoice(new File([blob], `voice-${Date.now()}.webm`, { type: blob.type || "audio/webm" }));
           else setRecordingError("No audio was captured. Please try recording again.");
         } catch {
           voiceStreamRef.current = null;
           voiceRecorderRef.current = null;
+          recordingStoppingRef.current = false;
           setRecordingVoice(false);
           setRecordingError("The voice note could not be prepared. Please try again.");
         }
@@ -123,6 +143,7 @@ export function ChatView() {
         stream.getTracks().forEach((track) => track.stop());
         voiceStreamRef.current = null;
         voiceRecorderRef.current = null;
+        recordingStoppingRef.current = false;
         setRecordingVoice(false);
         setRecordingError("The microphone stopped unexpectedly. Please try again.");
       };
@@ -199,7 +220,7 @@ export function ChatView() {
         <input ref={videoRef} type="file" accept="video/*" capture className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void sendVideo(f); e.target.value = ""; }} />
         <input ref={gifRef} type="file" accept="image/gif" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void sendGif(f); e.target.value = ""; }} />
         <input ref={fileUploadRef} type="file" accept="*/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void sendFile(f); e.target.value = ""; }} />
-        <div className="relative flex items-center gap-1"><Button type="button" variant="ghost" size="icon" className="size-10 rounded-full text-primary hover:bg-primary/10" onClick={() => setFileMenuOpen((open) => !open)} aria-label="Attach photo, video, or file"><ImagePlus className="size-5" /></Button><Button type="button" variant="ghost" size="sm" className="h-9 rounded-full px-2 font-bold text-[11px] text-primary hover:bg-primary/10" onClick={() => gifRef.current?.click()} aria-label="Send GIF">GIF</Button>{fileMenuOpen && <div className="absolute bottom-12 left-0 z-10 min-w-[150px] rounded-[16px] border border-border bg-surface p-2 shadow-lg"><button type="button" className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-left text-sm hover:bg-mist" onClick={() => { fileRef.current?.click(); setFileMenuOpen(false); }}><ImagePlus className="size-4 text-primary" />Photo</button><button type="button" className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-left text-sm hover:bg-mist" onClick={() => { videoRef.current?.click(); setFileMenuOpen(false); }}><Film className="size-4 text-primary" />Video</button><button type="button" className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-left text-sm hover:bg-mist" onClick={() => { fileUploadRef.current?.click(); setFileMenuOpen(false); }}><FileText className="size-4 text-primary" />File</button></div>}</div>
+        <div className="relative flex items-center gap-1"><Button type="button" variant="ghost" size="icon" className="size-10 rounded-full text-primary hover:bg-primary/10" onClick={() => setFileMenuOpen((open) => !open)} aria-label="Attach photo, video, or file"><img src="./icon.svg" alt="" className="size-6" /></Button><Button type="button" variant="ghost" size="sm" className="h-9 rounded-full px-2 font-bold text-[11px] text-primary hover:bg-primary/10" onClick={() => gifRef.current?.click()} aria-label="Send GIF">GIF</Button>{fileMenuOpen && <div className="absolute bottom-12 left-0 z-10 min-w-[150px] rounded-[16px] border border-border bg-surface p-2 shadow-lg"><button type="button" className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-left text-sm hover:bg-mist" onClick={() => { fileRef.current?.click(); setFileMenuOpen(false); }}><img src="./icon.svg" alt="" className="size-4" />Photo</button><button type="button" className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-left text-sm hover:bg-mist" onClick={() => { videoRef.current?.click(); setFileMenuOpen(false); }}><Film className="size-4 text-primary" />Video</button><button type="button" className="flex w-full items-center gap-2 rounded-[12px] px-3 py-2 text-left text-sm hover:bg-mist" onClick={() => { fileUploadRef.current?.click(); setFileMenuOpen(false); }}><FileText className="size-4 text-primary" />File</button></div>}</div>
         <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={1} placeholder={recordingVoice ? `Recording… ${recordingSeconds}s` : "Type a message"} className="max-h-28 min-h-10 flex-1 resize-none rounded-[22px] border border-border bg-white px-4 py-2.5 text-[15px] text-fg outline-none placeholder:text-muted focus:border-primary" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (draft.trim()) { void sendText(draft); setDraft(""); } } }} />
         {!draft.trim() && <Button type="button" variant="ghost" size="icon" className={`size-10 rounded-full ${recordingVoice ? "bg-danger text-white hover:bg-danger/90" : "text-primary hover:bg-primary/10"}`} onClick={() => void toggleVoiceRecording()} aria-label={recordingVoice ? "Stop recording" : "Record voice note"}>{recordingVoice ? <Pause className="size-4" /> : <Mic className="size-4" />}</Button>}
         {draft.trim() && <Button type="submit" size="icon" className="size-10 rounded-full" aria-label="Send message"><Send className="size-4" /></Button>}
