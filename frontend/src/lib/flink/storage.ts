@@ -1,7 +1,7 @@
-import type { CallLog, ChatMessage, Contact, FlinkProfile, FlinkSimFile, Thread } from "./types";
+import type { CallLog, ChatMessage, Contact, FlinkProfile, FlinkSimFile, PendingMessage, RoomLink, Thread } from "./types";
 
 const DB_NAME = "flink_db";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const LEGACY_DB_NAME = "inet_db";
 const MIGRATION_KEY = "legacy-inet-v1-imported";
 
@@ -14,9 +14,9 @@ function openDb(): Promise<IDBDatabase> {
     req.onsuccess = () => resolve(req.result);
     req.onupgradeneeded = () => {
       const db = req.result;
-      for (const name of ["profile", "sim", "contacts", "threads", "messages", "calls", "settings"] as const) {
+      for (const name of ["profile", "sim", "contacts", "threads", "messages", "calls", "rooms", "outbox", "settings"] as const) {
         if (!db.objectStoreNames.contains(name)) {
-          const key = name === "messages" || name === "threads" || name === "calls" ? "id" : "key";
+          const key = name === "messages" || name === "threads" || name === "calls" || name === "rooms" || name === "outbox" ? "id" : "key";
           const store = db.createObjectStore(name, { keyPath: key });
           if (name === "messages") store.createIndex("threadId", "threadId");
         }
@@ -214,6 +214,9 @@ export const flinkStorage = {
   async putMessage(m: ChatMessage) {
     await tx("messages", "readwrite", (s) => s.put(m));
   },
+  async deleteMessage(id: string) {
+    await tx("messages", "readwrite", (s) => s.delete(id));
+  },
 
   async updateMessageStatus(id: string, status: "sent" | "delivered" | "read") {
     const db = await openDb();
@@ -242,6 +245,25 @@ export const flinkStorage = {
   async putCall(c: CallLog) {
     await tx("calls", "readwrite", (s) => s.put(c));
   },
+  async getRooms(): Promise<RoomLink[]> {
+    const all = (await tx<RoomLink[]>("rooms", "readonly", (s) => s.getAll())) ?? [];
+    return all.sort((a, b) => b.lastOpenedAt - a.lastOpenedAt);
+  },
+  async putRoom(room: RoomLink) {
+    await tx("rooms", "readwrite", (s) => s.put(room));
+  },
+  async deleteRoom(id: string) {
+    await tx("rooms", "readwrite", (s) => s.delete(id));
+  },
+  async getOutbox(): Promise<PendingMessage[]> {
+    return (await tx<PendingMessage[]>("outbox", "readonly", (s) => s.getAll())) ?? [];
+  },
+  async putOutbox(message: PendingMessage) {
+    await tx("outbox", "readwrite", (s) => s.put(message));
+  },
+  async deleteOutbox(id: string) {
+    await tx("outbox", "readwrite", (s) => s.delete(id));
+  },
 
   async getSetting<T>(key: string, fallback: T): Promise<T> {
     const row = await tx<{ key: string; value: T }>("settings", "readonly", (s) => s.get(key));
@@ -254,7 +276,7 @@ export const flinkStorage = {
   async wipe() {
     const db = await openDb();
     await Promise.all(
-      ["profile", "sim", "contacts", "threads", "messages", "calls", "settings"].map(
+      ["profile", "sim", "contacts", "threads", "messages", "calls", "rooms", "outbox", "settings"].map(
         (name) =>
           new Promise<void>((resolve, reject) => {
             const t = db.transaction(name, "readwrite");

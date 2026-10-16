@@ -48,6 +48,7 @@ export function CallOverlay() {
     useFlink();
   const localRef = useRef<HTMLVideoElement>(null);
   const remoteRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const screenRef = useRef<HTMLVideoElement>(null);
   const inCall = Boolean(session && outgoing && (outgoing.mode === "voice" || outgoing.mode === "video"));
 
@@ -58,6 +59,7 @@ export function CallOverlay() {
   useEffect(() => {
     const first = remoteMedia[0];
     if (remoteRef.current && first) remoteRef.current.srcObject = first.stream;
+    if (remoteAudioRef.current && first) remoteAudioRef.current.srcObject = first.stream;
   }, [remoteMedia]);
 
   useEffect(() => {
@@ -97,6 +99,7 @@ export function CallOverlay() {
           </>
         ) : (
           <div className="flex h-full flex-col items-center justify-center">
+            <audio ref={remoteAudioRef} autoPlay playsInline />
             <NumberAvatar seed={outgoing.to} label={outgoing.to} size={120} />
             <p className="font-display mt-5 text-3xl">{peerName}</p>
             <p className="text-sm text-subtle">{formatFlinkNumber(outgoing.to)}</p>

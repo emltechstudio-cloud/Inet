@@ -12,7 +12,7 @@ export function HistoryView() {
       <section className="pt-2">
         <p className="px-3 py-2 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Conversations</p>
         {threads.length === 0 && (
-          <p className="px-3 py-8 text-center text-sm text-muted">Nothing yet. Approach a number to begin.</p>
+          <p className="px-3 py-8 text-center text-sm text-muted">Nothing yet. Enter a Flink number to start chatting.</p>
         )}
         {threads.map((t) => (
           <button
@@ -33,7 +33,7 @@ export function HistoryView() {
         ))}
       </section>
       <section className="pt-4">
-        <p className="px-3 py-2 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Approaches</p>
+        <p className="px-3 py-2 text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">Calls and activity</p>
         {calls.length === 0 && <p className="px-3 py-6 text-center text-sm text-muted">No pings or calls stored here.</p>}
         {calls.slice(0, 20).map((c) => {
           const Icon = c.mode === "video" ? Video : c.mode === "voice" ? Phone : Radio;
@@ -50,7 +50,7 @@ export function HistoryView() {
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">{nameOf(c.peer)}</p>
                 <p className="text-sm text-muted">
-                  {c.direction === "out" ? "You approached" : "They approached"} · {c.mode} · {c.status}
+                  {c.direction === "out" ? "Outgoing" : "Incoming"} · {c.mode} · {c.status}
                 </p>
               </div>
               <span className="text-[11px] text-subtle tabular-nums">{formatTime(c.ts)}</span>

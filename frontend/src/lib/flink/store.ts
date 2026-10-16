@@ -18,6 +18,7 @@ import type {
   IncomingRequest,
   PeerStatus,
   Reaction,
+  RoomLink,
   RoomParticipant,
   Thread,
 } from "./types";
@@ -46,6 +47,7 @@ type FlinkState = {
   messages: ChatMessage[];
   calls: CallLog[];
   groups: FlinkGroup[];
+  rooms: RoomLink[];
   activeThread: Thread | null;
   incoming: IncomingRequest | null;
   outgoing: { to: string; mode: CommMode; sessionId: string } | null;
@@ -81,6 +83,7 @@ type FlinkState = {
   declineIncoming: () => void;
   cancelOutgoing: () => void;
   openThread: (thread: Thread) => Promise<void>;
+  startChat: (number: string) => Promise<void>;
   sendText: (text: string) => Promise<void>;
   sendImage: (file: File, caption?: string) => Promise<void>;
   sendVoiceNote: (file: File) => Promise<void>;
@@ -88,6 +91,7 @@ type FlinkState = {
   sendGif: (file: File) => Promise<void>;
   sendFile: (file: File) => Promise<void>;
   addReaction: (messageId: string, emoji: string) => Promise<void>;
+  deleteMessage: (messageId: string) => Promise<void>;
   hangup: () => void;
   endSession: () => void;
   toggleScreenShare: () => Promise<void>;
@@ -141,6 +145,7 @@ export const useFlink = create<FlinkState>((set, get) => ({
   messages: [],
   calls: [],
   groups: [],
+  rooms: [],
   activeThread: null,
   incoming: null,
   outgoing: null,
@@ -167,10 +172,11 @@ export const useFlink = create<FlinkState>((set, get) => ({
       const contacts = await flinkStorage.getContacts();
       const threads = await flinkStorage.getThreads();
       const calls = await flinkStorage.getCalls();
+      const rooms = await flinkStorage.getRooms();
       if (profile?.accessToken) {
         try {
           await flinkApi.me(profile.accessToken);
-          set({ profile, sim, contacts, threads, calls, boot: "ready" });
+          set({ profile, sim, contacts, threads, calls, rooms, boot: "ready" });
           await get().refreshGroups();
           startMailbox();
           void registerFlinkPush(profile.accessToken);
@@ -186,7 +192,7 @@ export const useFlink = create<FlinkState>((set, get) => ({
           }
         }
       }
-      set({ sim, contacts, threads, calls, boot: "auth" });
+      set({ sim, contacts, threads, calls, rooms, boot: "auth" });
     } catch {
       set({ boot: "auth" });
     }
@@ -254,7 +260,8 @@ export const useFlink = create<FlinkState>((set, get) => ({
       const contacts = await flinkStorage.getContacts();
       const threads = await flinkStorage.getThreads();
       const calls = await flinkStorage.getCalls();
-      set({ profile, sim, contacts, threads, calls, boot: "ready", busy: false, view: "home" });
+      const rooms = await flinkStorage.getRooms();
+      set({ profile, sim, contacts, threads, calls, rooms, boot: "ready", busy: false, view: "home" });
       startMailbox();
       void registerFlinkPush(profile.accessToken);
       await get().refreshGroups();
@@ -370,6 +377,7 @@ export const useFlink = create<FlinkState>((set, get) => ({
       outgoing: null,
       view: "home",
       groups: [],
+      rooms: [],
       threads: [],
       messages: [],
       contacts: [],
@@ -509,6 +517,14 @@ export const useFlink = create<FlinkState>((set, get) => ({
   async openThread(thread) {
     const messages = await flinkStorage.getMessages(thread.id);
     set({ activeThread: thread, messages, view: "chat" });
+  },
+
+  async startChat(number) {
+    if (!/^\d{6}$/.test(number) || number === get().profile?.flinkNumber) {
+      toast.error("Enter a valid six-digit Flink number");
+      return;
+    }
+    await get().approach(number, "chat");
   },
 
   async sendText(text) {
@@ -784,6 +800,10 @@ export const useFlink = create<FlinkState>((set, get) => ({
     get().session?.sendChat({ kind: "reaction", messageId, emoji, ts: Date.now(), id: messageId });
   },
 
+  async deleteMessage(messageId: string) {
+    await flinkStorage.deleteMessage(messageId);
+    set((state) => ({ messages: state.messages.filter((message) => message.id !== messageId) }));
+  },
   async toggleScreenShare() {
     const session = get().session;
     const isSharing = get().isScreenSharing;
@@ -826,6 +846,10 @@ export const useFlink = create<FlinkState>((set, get) => ({
     const base = new URL(import.meta.env.BASE_URL, window.location.href).toString();
     const params = new URLSearchParams({ mode, title: title || "Room" });
     const url = `${base}#room/${encodeURIComponent(id)}?${params.toString()}`;
+    const now = Date.now();
+    const room: RoomLink = { id, title: title || "Room", mode, url, hostNumber: get().profile?.flinkNumber, createdAt: now, lastOpenedAt: now };
+    void flinkStorage.putRoom(room);
+    set((state) => ({ rooms: [room, ...state.rooms.filter((item) => item.id !== id)] }));
     return { id, url };
   },
 

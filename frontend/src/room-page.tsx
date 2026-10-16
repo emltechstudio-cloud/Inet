@@ -105,7 +105,7 @@ export function RoomPage({ id, mode: rawMode, title }: { id: string; mode: strin
       </div>}
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-          {messages.map((message) => <div key={message.id} className={`mb-2 flex ${message.mine ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[78%] rounded-[18px] px-3 py-2 text-sm ${message.mine ? 'bg-primary text-primary-fg' : 'border border-border bg-surface'}`}>{!message.mine && <p className="mb-0.5 text-[10px] opacity-70">{message.from}</p>}{message.text}</div></div>)}
+          {messages.map((message) => <div key={message.id} className={`mb-2 flex ${message.mine ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[78%] rounded-[18px] px-3 py-2 text-sm ${message.mine ? 'bg-primary text-primary-fg' : 'border border-border bg-surface'}`}>{!message.mine && <p className="mb-0.5 text-[10px] opacity-70">{message.from}</p>}{renderLinkedText(message.text)}</div></div>)}
         </div>
         <form className="flex gap-2 border-t border-border p-3" onSubmit={(event) => { event.preventDefault(); send(); }}>
           <Input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Temporary message" />
@@ -120,4 +120,9 @@ function RemoteVideo({ stream }: { stream: MediaStream }) {
   const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => { if (ref.current) ref.current.srcObject = stream; }, [stream]);
   return <video ref={ref} autoPlay playsInline className="h-full w-full object-cover" />;
+}
+
+function renderLinkedText(value?: string) {
+  if (!value) return null;
+  return value.split(/(https?:\/\/[^\s]+)/g).map((part, index) => /^https?:\/\//.test(part) ? <a key={`${part}-${index}`} href={part} target="_blank" rel="noreferrer" className="break-all underline">{part}</a> : <span key={`${part}-${index}`}>{part}</span>);
 }

@@ -41,7 +41,7 @@ export function YouView() {
           {formatFlinkNumber(profile.flinkNumber)}
         </p>
         <p className="mt-3 max-w-xs text-sm text-muted">
-          People approach this number. There is no public profile, no feed, and no online lamp.
+          People use this number to start a direct chat. There is no public profile, feed, or online lamp.
         </p>
       </div>
       <section className="mt-8 rounded-[22px] border border-border bg-surface p-4">

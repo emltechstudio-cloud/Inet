@@ -12,7 +12,7 @@ const waveform = [4, 8, 13, 9, 16, 11, 19, 12, 7, 15, 10, 18, 8, 14, 6, 11, 17, 
 export function ChatView() {
   const {
     activeThread, messages, contacts, sendText, sendImage, sendVoiceNote, sendVideo, sendGif, sendFile,
-    addReaction, setView, approach, callStatus, peerStatuses, sessionEnded, startNewSession,
+    addReaction, deleteMessage, setView, approach, callStatus, peerStatuses, sessionEnded, startNewSession,
   } = useFlink();
   const [draft, setDraft] = useState("");
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
@@ -238,7 +238,7 @@ export function ChatView() {
             {m.kind === "video" && m.videoUrl && <video src={m.videoUrl} controls className="mb-1 max-h-64 w-full rounded-[7px]" />}
             {m.kind === "gif" && m.imageUrl && <img src={m.imageUrl} alt="GIF" className="mb-1 max-h-64 rounded-[7px]" />}
             {m.kind === "file" && m.fileUrl && <a href={m.fileUrl} download={m.fileName || "file"} className="mb-1 flex items-center gap-2 rounded-lg bg-primary/10 p-2 text-sm text-primary"><FileText className="size-5 shrink-0" /><span className="max-w-[180px] truncate">{m.fileName || "File"}</span></a>}
-            {(m.kind === "text" || m.caption) && <p className={m.kind === "text" ? "" : "mt-1 whitespace-pre-wrap"}>{m.kind === "text" ? m.text : m.caption}</p>}
+            {(m.kind === "text" || m.caption) && <p className={m.kind === "text" ? "" : "mt-1 whitespace-pre-wrap"}>{renderLinkedText(m.kind === "text" ? m.text : m.caption)}</p>}
             {m.reactions && Object.keys(m.reactions).length > 0 && <div className="mt-2 flex flex-wrap gap-1">{Object.entries(m.reactions).map(([emoji, reaction]) => <span key={emoji} className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs"><span>{emoji}</span><span className="text-subtle">{reaction.count}</span></span>)}</div>}
             <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${m.mine ? "text-primary/70" : "text-muted"}`}><span>{formatTime(m.ts)}</span><span>{m.mine && m.status === "sent" && "✓"}{m.mine && m.status === "delivered" && "✓✓"}{m.mine && m.status === "read" && <span className="text-primary-2">✓✓</span>}</span></div>
           </div>
@@ -264,7 +264,13 @@ export function ChatView() {
         {draft.trim() && <Button type="submit" size="icon" className="size-10 rounded-full" aria-label="Send message"><Send className="size-4" /></Button>}
       </form>
 
-      {emojiPickerOpen && selectedMessageId && <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-[20px] border border-border bg-surface p-4 shadow-lg"><p className="mb-2 text-sm">React with emoji</p><div className="grid grid-cols-6 gap-2">{["👍", "❤️", "🔥", "😂", "😢", "👏", "✨", "💯", "🎉", "🙏", "🚀", "💖"].map((emoji) => <button key={emoji} type="button" className="rounded-full p-1 text-2xl hover:bg-bg" onClick={() => { void addReaction(selectedMessageId, emoji); setEmojiPickerOpen(false); setSelectedMessageId(null); }}>{emoji}</button>)}</div><Button variant="ghost" size="sm" className="mt-2 w-full" onClick={() => { setEmojiPickerOpen(false); setSelectedMessageId(null); }}>Cancel</Button></div>}
+      {emojiPickerOpen && selectedMessageId && <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-[20px] border border-border bg-surface p-4 shadow-lg"><p className="mb-2 text-sm">Message actions</p><div className="grid grid-cols-6 gap-2">{["👍", "❤️", "🔥", "😂", "😢", "👏", "✨", "💯", "🎉", "🙏", "🚀", "💖"].map((emoji) => <button key={emoji} type="button" className="rounded-full p-1 text-2xl hover:bg-bg" onClick={() => { void addReaction(selectedMessageId, emoji); setEmojiPickerOpen(false); setSelectedMessageId(null); }}>{emoji}</button>)}</div><Button variant="secondary" size="sm" className="mt-3 w-full" onClick={() => { void deleteMessage(selectedMessageId); setEmojiPickerOpen(false); setSelectedMessageId(null); }}>Delete for me</Button><Button variant="ghost" size="sm" className="mt-1 w-full" onClick={() => { setEmojiPickerOpen(false); setSelectedMessageId(null); }}>Cancel</Button></div>}
     </div>
   );
+}
+
+function renderLinkedText(value?: string) {
+  if (!value) return null;
+  const parts = value.split(/(https?:\/\/[^\s]+)/g);
+  return parts.map((part, index) => /^https?:\/\//.test(part) ? <a key={`${part}-${index}`} href={part} target="_blank" rel="noreferrer" className="break-all text-primary underline">{part}</a> : <span key={`${part}-${index}`}>{part}</span>);
 }

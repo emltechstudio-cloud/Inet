@@ -77,6 +77,24 @@ export type CallLog = {
   durationSec?: number;
 };
 
+export type RoomLink = {
+  id: string;
+  title: string;
+  mode: CommMode;
+  url: string;
+  hostNumber?: string;
+  createdAt: number;
+  lastOpenedAt: number;
+};
+
+export type PendingMessage = {
+  id: string;
+  threadId: string;
+  payload: Record<string, unknown>;
+  createdAt: number;
+  attempts: number;
+};
+
 export type FlinkGroup = {
   group_id: string;
   name: string;

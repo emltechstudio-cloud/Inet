@@ -15,7 +15,7 @@ import { formatFlinkNumber } from "@/lib/utils";
 import type { AppView } from "@/lib/flink/types";
 
 const NAV: Array<{ id: AppView; label: string; icon: typeof Radio }> = [
-  { id: "dial", label: "Approach", icon: Radio },
+  { id: "dial", label: "Chat", icon: Radio },
   { id: "history", label: "History", icon: History },
   { id: "groups", label: "Groups", icon: Users },
   { id: "rooms", label: "Rooms", icon: Link2 },
