@@ -15,6 +15,7 @@ type PeerSlot = {
 export type ChatData = {
   kind: string;
   text?: string;
+  caption?: string;
   image?: string;
   audio?: string;
   video?: string;

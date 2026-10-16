@@ -103,7 +103,7 @@ function Splash() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4">
       <div className="flex size-20 items-center justify-center rounded-[24px] bg-primary text-primary-fg">
-        <FlinkMark size={40} />
+        <img src="./icon.svg" alt="Flink" className="size-12" />
       </div>
       <p className="font-display text-2xl text-primary">Flink</p>
     </div>

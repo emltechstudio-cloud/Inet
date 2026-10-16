@@ -81,9 +81,9 @@ type FlinkState = {
   cancelOutgoing: () => void;
   openThread: (thread: Thread) => Promise<void>;
   sendText: (text: string) => Promise<void>;
-  sendImage: (file: File) => Promise<void>;
+  sendImage: (file: File, caption?: string) => Promise<void>;
   sendVoiceNote: (file: File) => Promise<void>;
-  sendVideo: (file: File) => Promise<void>;
+  sendVideo: (file: File, caption?: string) => Promise<void>;
   sendGif: (file: File) => Promise<void>;
   sendFile: (file: File) => Promise<void>;
   addReaction: (messageId: string, emoji: string) => Promise<void>;
@@ -527,7 +527,7 @@ export const useFlink = create<FlinkState>((set, get) => ({
     get().session?.sendChat({ kind: "text", text: trimmed, id: msg.id, ts: msg.ts });
   },
 
-  async sendImage(file) {
+  async sendImage(file, caption = "") {
     if (file.size > 180_000) {
       toast.error("Keep images under 180 KB for peer transfer");
       return;
@@ -541,6 +541,7 @@ export const useFlink = create<FlinkState>((set, get) => ({
       threadId: thread.id,
       from: profile.flinkNumber,
       kind: "image",
+      caption: caption.trim() || undefined,
       imageUrl: dataUrl,
       ts: Date.now(),
       mine: true,
@@ -554,7 +555,7 @@ export const useFlink = create<FlinkState>((set, get) => ({
       threads: [next, ...get().threads.filter((t) => t.id !== next.id)],
       activeThread: next,
     });
-    get().session?.sendChat({ kind: "image", image: dataUrl, id: msg.id, ts: msg.ts });
+    get().session?.sendChat({ kind: "image", image: dataUrl, caption: msg.caption, id: msg.id, ts: msg.ts });
   },
 
   hangup() {
@@ -657,7 +658,7 @@ export const useFlink = create<FlinkState>((set, get) => ({
     get().session?.sendChat({ kind: "voice", audio: dataUrl, id: msg.id, ts: msg.ts, duration: msg.duration });
   },
 
-  async sendVideo(file: File) {
+  async sendVideo(file, caption = "") {
     if (file.size > 50_000_000) {
       toast.error("Keep videos under 50 MB");
       return;
@@ -671,6 +672,7 @@ export const useFlink = create<FlinkState>((set, get) => ({
       threadId: thread.id,
       from: profile.flinkNumber,
       kind: "video",
+      caption: caption.trim() || undefined,
       videoUrl: dataUrl,
       ts: Date.now(),
       mine: true,
@@ -685,7 +687,7 @@ export const useFlink = create<FlinkState>((set, get) => ({
       threads: [next, ...get().threads.filter((t) => t.id !== next.id)],
       activeThread: next,
     });
-    get().session?.sendChat({ kind: "video", video: dataUrl, id: msg.id, ts: msg.ts, duration: msg.duration });
+    get().session?.sendChat({ kind: "video", video: dataUrl, caption: msg.caption, id: msg.id, ts: msg.ts, duration: msg.duration });
   },
 
   async sendGif(file: File) {
@@ -966,6 +968,7 @@ async function joinSession(sid: string, mode: CommMode, peerLabel: string) {
         from,
         kind: data.kind === "image" ? "image" : data.kind === "voice" ? "voice" : data.kind === "video" ? "video" : data.kind === "gif" ? "gif" : data.kind === "file" ? "file" : "text",
         text: data.text,
+        caption: data.caption,
         imageUrl: data.image,
         audioUrl: data.audio,
         videoUrl: data.video,
@@ -982,7 +985,7 @@ async function joinSession(sid: string, mode: CommMode, peerLabel: string) {
         kind: "direct",
         title: number,
         peerNumber: number,
-        lastText: data.text || (data.kind === "image" ? "Photo" : data.kind === "voice" ? "Voice note" : data.kind === "video" ? "Video" : data.kind === "gif" ? "GIF" : data.kind === "file" ? data.fileName || "File" : ""),
+        lastText: data.caption || data.text || (data.kind === "image" ? "Photo" : data.kind === "voice" ? "Voice note" : data.kind === "video" ? "Video" : data.kind === "gif" ? "GIF" : data.kind === "file" ? data.fileName || "File" : ""),
         lastTs: data.ts,
       };
       await flinkStorage.putThread(thread);

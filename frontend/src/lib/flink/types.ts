@@ -41,6 +41,7 @@ export type ChatMessage = {
   from: string;
   kind: "text" | "image" | "system" | "voice" | "video" | "gif" | "file";
   text?: string;
+  caption?: string;
   imageUrl?: string;
   audioUrl?: string;
   videoUrl?: string;
