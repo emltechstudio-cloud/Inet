@@ -28,6 +28,7 @@ export function ChatView() {
   const gifRef = useRef<HTMLInputElement>(null);
   const fileUploadRef = useRef<HTMLInputElement>(null);
   const voiceRecorderRef = useRef<MediaRecorder | null>(null);
+  const voiceStreamRef = useRef<MediaStream | null>(null);
   const voiceChunksRef = useRef<Blob[]>([]);
   const previewAudioRef = useRef<HTMLAudioElement>(null);
 
@@ -37,7 +38,11 @@ export function ChatView() {
     const timer = window.setInterval(() => setRecordingSeconds((seconds) => seconds + 1), 1000);
     return () => window.clearInterval(timer);
   }, [recordingVoice]);
-  useEffect(() => () => { if (voicePreview) URL.revokeObjectURL(voicePreview.url); }, [voicePreview]);
+  useEffect(() => () => {
+    voiceRecorderRef.current?.stop();
+    voiceStreamRef.current?.getTracks().forEach((track) => track.stop());
+    if (voicePreview) URL.revokeObjectURL(voicePreview.url);
+  }, [voicePreview]);
 
   function clearVoicePreview() {
     if (voicePreview) URL.revokeObjectURL(voicePreview.url);
@@ -60,23 +65,45 @@ export function ChatView() {
       voiceRef.current?.click();
       return;
     }
+    const activeRecorder = voiceRecorderRef.current;
+    if (activeRecorder) {
+      if (activeRecorder.state === "recording") {
+        try { activeRecorder.stop(); } catch { /* recorder already stopped */ }
+      }
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      voiceStreamRef.current = stream;
+      const preferredMime = "audio/webm;codecs=opus";
+      const mimeType = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported(preferredMime)
+        ? preferredMime
+        : undefined;
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       voiceChunksRef.current = [];
       setRecordingSeconds(0);
       recorder.ondataavailable = (event) => { if (event.data.size > 0) voiceChunksRef.current.push(event.data); };
       recorder.onstop = () => {
         const blob = new Blob(voiceChunksRef.current, { type: recorder.mimeType || "audio/webm" });
         stream.getTracks().forEach((track) => track.stop());
+        voiceStreamRef.current = null;
         voiceRecorderRef.current = null;
         setRecordingVoice(false);
         if (blob.size > 0) prepareVoice(new File([blob], `voice-${Date.now()}.webm`, { type: blob.type }));
+      };
+      recorder.onerror = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        voiceStreamRef.current = null;
+        voiceRecorderRef.current = null;
+        setRecordingVoice(false);
       };
       voiceRecorderRef.current = recorder;
       recorder.start();
       setRecordingVoice(true);
     } catch {
+      voiceStreamRef.current?.getTracks().forEach((track) => track.stop());
+      voiceStreamRef.current = null;
+      voiceRecorderRef.current = null;
       setRecordingVoice(false);
     }
   }
@@ -84,7 +111,12 @@ export function ChatView() {
   function togglePreview() {
     const audio = previewAudioRef.current;
     if (!audio) return;
-    if (audio.paused) { void audio.play(); setPreviewPlaying(true); } else { audio.pause(); setPreviewPlaying(false); }
+    if (audio.paused) {
+      void audio.play().then(() => setPreviewPlaying(true)).catch(() => setPreviewPlaying(false));
+    } else {
+      audio.pause();
+      setPreviewPlaying(false);
+    }
   }
 
   function sendPreview() {
