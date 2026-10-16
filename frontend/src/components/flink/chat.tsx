@@ -88,15 +88,15 @@ export function ChatView() {
   const name = contacts.find((c) => c.flinkNumber === peer)?.name || formatFlinkNumber(peer);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex items-center gap-2 border-b border-border bg-surface px-2 py-2">
-        <Button variant="ghost" size="icon" onClick={() => setView("history")} aria-label="Back">
+    <div className="flex min-h-0 flex-1 flex-col bg-[#efeae2]">
+      <header className="flex items-center gap-1 bg-[#075e54] px-1 py-2 text-white shadow-sm">
+        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => setView("history")} aria-label="Back">
           <ArrowLeft className="size-5" />
         </Button>
         <NumberAvatar seed={peer} label={name} size={40} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{name}</p>
-          <p className="text-xs text-muted">
+          <p className="truncate text-[15px] font-semibold">{name}</p>
+          <p className="text-xs text-white/75">
             {(() => {
               const status = peerStatuses.get(peer);
               if (status?.online) return "Online";
@@ -107,28 +107,28 @@ export function ChatView() {
         </div>
         {/^\d{6}$/.test(peer) && (
           <>
-            <Button variant="ghost" size="icon" onClick={() => void approach(peer, "voice")} aria-label="Voice">
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => void approach(peer, "voice")} aria-label="Voice call">
               <Phone className="size-5" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => void approach(peer, "video")} aria-label="Video">
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10" onClick={() => void approach(peer, "video")} aria-label="Video call">
               <Video className="size-5" />
             </Button>
           </>
         )}
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(rgba(117,96,78,0.08)_1px,transparent_1px)] [background-size:18px_18px] px-3 py-4">
         {messages.length === 0 && (
-          <p className="px-6 py-12 text-center text-sm text-muted">
+          <div className="mx-auto mt-8 max-w-[280px] rounded-lg bg-[#fff5c4] px-4 py-2.5 text-center text-xs leading-relaxed text-[#6b5c32] shadow-sm">
             Messages stay on this device. They travel peer to peer once you are connected.
-          </p>
+          </div>
         )}
         {messages.map((m) => (
           <div key={m.id} className={`mb-2 flex ${m.mine ? "justify-end" : "justify-start"}`}>
             <div
-              className={`max-w-[78%] rounded-[18px] px-3.5 py-2.5 text-[15px] leading-snug ${
+              className={`relative max-w-[86%] rounded-[9px] px-3 py-2 text-[15px] leading-snug shadow-[0_1px_1px_rgba(0,0,0,0.12)] ${
                 m.mine
-                  ? "rounded-br-sm bg-primary text-primary-fg"
-                  : "rounded-bl-sm border border-border bg-surface text-fg"
+                  ? "rounded-br-[2px] bg-[#d9fdd3] text-[#111b21]"
+                  : "rounded-bl-[2px] bg-white text-[#111b21]"
               }`}
               onContextMenu={(e) => {
                 e.preventDefault();
@@ -139,16 +139,16 @@ export function ChatView() {
               }}
             >
               {m.kind === "image" && m.imageUrl ? (
-                <img src={m.imageUrl} alt="" className="mb-1 max-h-52 rounded-[12px]" />
+                <img src={m.imageUrl} alt="Photo message" className="mb-1 max-h-64 rounded-[7px]" />
               ) : null}
               {m.kind === "voice" && m.audioUrl ? (
                 <audio src={m.audioUrl} controls className="mb-1 w-full" />
               ) : null}
               {m.kind === "video" && m.videoUrl ? (
-                <video src={m.videoUrl} controls className="mb-1 max-h-52 w-full rounded-[12px]" />
+                <video src={m.videoUrl} controls className="mb-1 max-h-64 w-full rounded-[7px]" />
               ) : null}
               {m.kind === "gif" && m.imageUrl ? (
-                <img src={m.imageUrl} alt="GIF" className="mb-1 max-h-52 rounded-[12px]" />
+                <img src={m.imageUrl} alt="GIF" className="mb-1 max-h-64 rounded-[7px]" />
               ) : null}
               {m.kind === "text" && m.text}
               {m.reactions && Object.keys(m.reactions).length > 0 && (
@@ -164,13 +164,13 @@ export function ChatView() {
                   ))}
                 </div>
               )}
-              <div className={`mt-1 flex items-center justify-between text-[10px] ${m.mine ? "text-primary-fg/70" : "text-subtle"}`}>
+              <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${m.mine ? "text-[#667b65]" : "text-[#667781]"}`}>
                 <span>{formatTime(m.ts)}</span>
                 <span>
                   {m.mine && m.status === "sent" && "✓"}
                   {m.mine && m.status === "delivered" && "✓✓"}
-                  {m.mine && m.status === "read" && <span className="text-green-500">✓✓</span>}
-                  {!m.mine && m.status === "read" && <span className="text-green-500">✓✓</span>}
+                  {m.mine && m.status === "read" && <span className="text-[#53bdeb]">✓✓</span>}
+                  {!m.mine && m.status === "read" && <span className="text-[#53bdeb]">✓✓</span>}
                 </span>
               </div>
             </div>
@@ -191,7 +191,7 @@ export function ChatView() {
         </div>
       )}
       <form
-        className="flex items-end gap-2 border-t border-border bg-surface px-3 py-2.5"
+        className="flex items-end gap-2 border-t border-[#d6d1cb] bg-[#f0f2f5] px-2 py-2"
         onSubmit={(e) => {
           e.preventDefault();
           void sendText(draft);
@@ -244,15 +244,26 @@ export function ChatView() {
             e.target.value = "";
           }}
         />
-        <div className="relative">
+        <div className="relative flex items-center gap-1">
           <Button
             type="button"
             variant="ghost"
             size="icon"
+            className="size-10 rounded-full text-[#54656f] hover:bg-[#e2e6e8]"
             onClick={() => setFileMenuOpen(!fileMenuOpen)}
             aria-label="Attach"
           >
             <ImagePlus className="size-5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-9 rounded-full px-2 font-bold text-[11px] text-[#54656f] hover:bg-[#e2e6e8]"
+            onClick={() => gifRef.current?.click()}
+            aria-label="Send GIF"
+          >
+            GIF
           </Button>
         {fileMenuOpen && (
             <div className="absolute bottom-12 left-0 z-10 rounded-[16px] border border-border bg-surface p-2 shadow-lg">
@@ -318,8 +329,8 @@ export function ChatView() {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           rows={1}
-          placeholder="Write something temporary"
-          className="max-h-28 min-h-11 flex-1 resize-none rounded-[20px] bg-bg px-4 py-2.5 text-[15px] text-fg outline-none"
+          placeholder={recordingVoice ? "Recording voice note… tap the mic to stop" : "Type a message"}
+          className="max-h-28 min-h-10 flex-1 resize-none rounded-[22px] border border-[#d5dadd] bg-white px-4 py-2.5 text-[15px] text-[#111b21] outline-none placeholder:text-[#667781] focus:border-[#075e54]"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -328,8 +339,14 @@ export function ChatView() {
             }
           }}
         />
-        <Button type="submit" size="icon" className="rounded-full" disabled={!draft.trim()} aria-label="Send">
-          <Send className="size-4" />
+        <Button
+          type={draft.trim() ? "submit" : "button"}
+          size="icon"
+          className={`size-10 rounded-full ${recordingVoice ? "bg-danger" : "bg-[#075e54] hover:bg-[#128c7e]"}`}
+          onClick={!draft.trim() ? () => void toggleVoiceRecording() : undefined}
+          aria-label={draft.trim() ? "Send message" : recordingVoice ? "Stop recording" : "Record voice note"}
+        >
+          {draft.trim() ? <Send className="size-4" /> : <Mic className="size-4" />}
         </Button>
       </form>
       {emojiPickerOpen && selectedMessageId && (
