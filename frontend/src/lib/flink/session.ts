@@ -18,6 +18,8 @@ export type ChatData = {
   image?: string;
   audio?: string;
   video?: string;
+  file?: string;
+  fileName?: string;
   id: string;
   ts: number;
   messageId?: string;

@@ -85,6 +85,7 @@ type FlinkState = {
   sendVoiceNote: (file: File) => Promise<void>;
   sendVideo: (file: File) => Promise<void>;
   sendGif: (file: File) => Promise<void>;
+  sendFile: (file: File) => Promise<void>;
   addReaction: (messageId: string, emoji: string) => Promise<void>;
   hangup: () => void;
   endSession: () => void;
@@ -717,6 +718,37 @@ export const useFlink = create<FlinkState>((set, get) => ({
     get().session?.sendChat({ kind: "gif", image: dataUrl, id: msg.id, ts: msg.ts });
   },
 
+  async sendFile(file: File) {
+    if (file.size > 5_000_000) {
+      toast.error("Keep files under 5 MB for peer transfer");
+      return;
+    }
+    const thread = get().activeThread;
+    const profile = get().profile;
+    if (!thread || !profile) return;
+    const dataUrl = await fileToDataUrl(file);
+    const msg: ChatMessage = {
+      id: randomId(10),
+      threadId: thread.id,
+      from: profile.flinkNumber,
+      kind: "file",
+      fileUrl: dataUrl,
+      fileName: file.name,
+      ts: Date.now(),
+      mine: true,
+      status: "sent",
+    };
+    await flinkStorage.putMessage(msg);
+    const next = { ...thread, lastText: file.name, lastTs: msg.ts };
+    await flinkStorage.putThread(next);
+    set({
+      messages: [...get().messages, msg],
+      threads: [next, ...get().threads.filter((t) => t.id !== next.id)],
+      activeThread: next,
+    });
+    get().session?.sendChat({ kind: "file", file: dataUrl, fileName: file.name, id: msg.id, ts: msg.ts });
+  },
+
   async addReaction(messageId: string, emoji: string) {
     const messages = get().messages;
     const profile = get().profile;
@@ -932,11 +964,13 @@ async function joinSession(sid: string, mode: CommMode, peerLabel: string) {
         id: data.id,
         threadId: tid,
         from,
-        kind: data.kind === "image" ? "image" : data.kind === "voice" ? "voice" : data.kind === "video" ? "video" : data.kind === "gif" ? "gif" : "text",
+        kind: data.kind === "image" ? "image" : data.kind === "voice" ? "voice" : data.kind === "video" ? "video" : data.kind === "gif" ? "gif" : data.kind === "file" ? "file" : "text",
         text: data.text,
         imageUrl: data.image,
         audioUrl: data.audio,
         videoUrl: data.video,
+        fileUrl: data.file,
+        fileName: data.fileName,
         ts: data.ts,
         mine: false,
         status: "delivered" as const,
@@ -948,7 +982,7 @@ async function joinSession(sid: string, mode: CommMode, peerLabel: string) {
         kind: "direct",
         title: number,
         peerNumber: number,
-        lastText: data.text || (data.kind === "image" ? "Photo" : data.kind === "voice" ? "Voice note" : data.kind === "video" ? "Video" : data.kind === "gif" ? "GIF" : ""),
+        lastText: data.text || (data.kind === "image" ? "Photo" : data.kind === "voice" ? "Voice note" : data.kind === "video" ? "Video" : data.kind === "gif" ? "GIF" : data.kind === "file" ? data.fileName || "File" : ""),
         lastTs: data.ts,
       };
       await flinkStorage.putThread(thread);

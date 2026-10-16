@@ -39,11 +39,13 @@ export type ChatMessage = {
   id: string;
   threadId: string;
   from: string;
-  kind: "text" | "image" | "system" | "voice" | "video" | "gif";
+  kind: "text" | "image" | "system" | "voice" | "video" | "gif" | "file";
   text?: string;
   imageUrl?: string;
   audioUrl?: string;
   videoUrl?: string;
+  fileUrl?: string;
+  fileName?: string;
   ts: number;
   mine: boolean;
   status?: "sent" | "delivered" | "read";
