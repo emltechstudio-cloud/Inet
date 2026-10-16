@@ -74,6 +74,7 @@ type FlinkState = {
   setView: (view: AppView) => void;
   refreshGroups: () => Promise<void>;
   createGroup: (name: string, members: string[]) => Promise<void>;
+  addGroupMembers: (groupId: string, members: string[]) => Promise<void>;
   approach: (target: string, mode: CommMode) => Promise<void>;
   approachGroup: (group: FlinkGroup, mode: CommMode) => Promise<void>;
   acceptIncoming: () => Promise<void>;
@@ -396,6 +397,16 @@ export const useFlink = create<FlinkState>((set, get) => ({
     const res = await flinkApi.createGroup(token, name, members.filter((n) => /^\d{6}$/.test(n)));
     set({ groups: [res.group, ...get().groups] });
     toast.success("Group created");
+  },
+
+  async addGroupMembers(groupId, members) {
+    const token = get().profile?.accessToken;
+    if (!token) return;
+    const nums = members.filter((n) => /^\d{6}$/.test(n));
+    if (nums.length === 0) return;
+    const res = await flinkApi.addGroupMembers(token, groupId, nums);
+    set({ groups: get().groups.map((group) => group.group_id === groupId ? res.group : group) });
+    toast.success("Participants added");
   },
 
   async approach(target, mode) {

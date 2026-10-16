@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageCircle, Phone, Plus, Radio, Video } from "lucide-react";
+import { MessageCircle, Phone, Plus, Radio, UserPlus, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,18 +68,26 @@ export function GroupsView() {
 }
 
 function GroupRow({ group, onApproach }: { group: FlinkGroup; onApproach: (mode: CommMode) => void }) {
+  const { addGroupMembers } = useFlink();
+  const [adding, setAdding] = useState(false);
+  const [newMembers, setNewMembers] = useState("");
+  async function addMembers() {
+    const numbers = newMembers.split(/[\s,]+/).map((value) => value.replace(/\D/g, "")).filter((value) => value.length === 6);
+    await addGroupMembers(group.group_id, numbers);
+    setNewMembers("");
+    setAdding(false);
+  }
   return (
     <div className="mb-2 rounded-[20px] border border-border bg-surface p-4">
       <div className="flex items-center gap-3">
         <NumberAvatar seed={group.group_id} label={group.name} />
         <div className="min-w-0 flex-1">
           <p className="font-semibold">{group.name}</p>
-          <p className="truncate text-sm text-muted">
-            {group.members.map((m) => formatFlinkNumber(m)).join(" · ")}
-          </p>
+          <p className="truncate text-sm text-muted">{group.members.length} participant{group.members.length === 1 ? "" : "s"} · {group.members.map((m) => formatFlinkNumber(m)).join(" · ")}</p>
         </div>
       </div>
       <div className="mt-3 flex gap-2">
+        <Button size="sm" variant="secondary" onClick={() => setAdding((value) => !value)} aria-label="Add group participants"><UserPlus className="size-3.5" />Add</Button>
         <Button size="sm" variant="secondary" onClick={() => onApproach("ping")}>
           <Radio className="size-3.5" /> Ping
         </Button>
@@ -93,6 +101,7 @@ function GroupRow({ group, onApproach }: { group: FlinkGroup; onApproach: (mode:
           <Video className="size-3.5" /> Video
         </Button>
       </div>
+      {adding && <div className="mt-3 flex gap-2"><input value={newMembers} onChange={(e) => setNewMembers(e.target.value)} placeholder="Six-digit numbers" className="min-h-9 min-w-0 flex-1 rounded-xl border border-border bg-white px-3 text-xs outline-none focus:border-primary" /><Button size="sm" onClick={() => void addMembers()}>Save</Button></div>}
     </div>
   );
 }

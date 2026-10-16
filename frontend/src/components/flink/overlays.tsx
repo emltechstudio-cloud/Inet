@@ -44,7 +44,7 @@ export function IncomingSheet() {
 }
 
 export function CallOverlay() {
-  const { outgoing, session, callStatus, remoteMedia, hangup, cancelOutgoing, muted, videoOff, toggleMute, toggleVideo, toggleScreenShare, isScreenSharing, screenStream, roomParticipants } =
+  const { outgoing, session, callStatus, remoteMedia, hangup, cancelOutgoing, muted, videoOff, toggleMute, toggleVideo, toggleScreenShare, isScreenSharing, screenStream, roomParticipants, contacts } =
     useFlink();
   const localRef = useRef<HTMLVideoElement>(null);
   const remoteRef = useRef<HTMLVideoElement>(null);
@@ -66,7 +66,8 @@ export function CallOverlay() {
 
   if (!inCall || !outgoing) return null;
   const video = outgoing.mode === "video";
-  const participantCount = roomParticipants.size;
+  const participantCount = Math.max(1, roomParticipants.size + 1);
+  const peerName = contacts.find((contact) => contact.flinkNumber === outgoing.to)?.name || formatFlinkNumber(outgoing.to);
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-call text-call-fg">
@@ -97,18 +98,20 @@ export function CallOverlay() {
         ) : (
           <div className="flex h-full flex-col items-center justify-center">
             <NumberAvatar seed={outgoing.to} label={outgoing.to} size={120} />
-            <p className="font-display mt-5 text-3xl">{formatFlinkNumber(outgoing.to)}</p>
+            <p className="font-display mt-5 text-3xl">{peerName}</p>
+            <p className="text-sm text-subtle">{formatFlinkNumber(outgoing.to)}</p>
             <p className="mt-2 text-sm text-subtle">{callStatus || "Connecting"}</p>
           </div>
         )}
         {video && (
           <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-call/70 to-transparent p-5 pt-10 text-center">
-            <p className="font-display text-xl">{formatFlinkNumber(outgoing.to)}</p>
+            <p className="font-display text-xl">{peerName}</p>
+            <p className="text-xs text-subtle">{formatFlinkNumber(outgoing.to)}</p>
             <p className="text-sm text-subtle">{callStatus}</p>
           </div>
         )}
         {isScreenSharing && (
-          <div className="pointer-events-none absolute top-4 right-4 rounded-full bg-green-500/20 px-3 py-1 text-sm text-green-200">
+          <div className="pointer-events-none absolute top-4 right-4 rounded-full bg-primary/80 px-3 py-1 text-sm text-primary-fg">
             <Monitor className="size-4" />
             Sharing screen
           </div>

@@ -3,7 +3,6 @@ import { History, Link2, Radio, UserRound, Users } from "lucide-react";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { useFlink } from "@/lib/flink/store";
-import { FlinkMark } from "./mark";
 import { AuthFlow } from "./auth-flow";
 import { DialPad } from "./dial";
 import { HistoryView } from "./history";
@@ -39,8 +38,7 @@ export function FlinkShell() {
           <>
             {view !== "chat" && (
               <header className="flex items-center justify-between px-5 pt-5 pb-2">
-                <div className="flex items-center gap-2 text-primary">
-                  <FlinkMark size={22} />
+                <div className="flex items-center text-primary">
                   <span className="font-display text-xl font-medium tracking-tight">Flink</span>
                 </div>
                 {profile && (

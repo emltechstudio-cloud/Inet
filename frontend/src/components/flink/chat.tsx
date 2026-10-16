@@ -232,9 +232,9 @@ export function ChatView() {
       <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(rgba(123,21,53,0.07)_1px,transparent_1px)] [background-size:18px_18px] px-3 py-4">
         {messages.length === 0 && <div className="mx-auto mt-8 max-w-[280px] rounded-lg bg-[#fff5c4] px-4 py-2.5 text-center text-xs leading-relaxed text-[#6b5c32] shadow-sm">Messages stay on this device. They travel peer to peer once you are connected.</div>}
         {messages.map((m) => <div key={m.id} className={`mb-2 flex ${m.mine ? "justify-end" : "justify-start"}`}>
-          <div className={`relative max-w-[86%] rounded-[9px] px-3 py-2 text-[15px] leading-snug shadow-[0_1px_1px_rgba(0,0,0,0.12)] ${m.mine ? "rounded-br-[2px] bg-[#f2d9e2] text-fg" : "rounded-bl-[2px] bg-white text-fg"}`} onContextMenu={(e) => { e.preventDefault(); setSelectedMessageId(m.id); setEmojiPickerOpen(true); }}>
+          <div className={`relative ${m.kind === "voice" ? "w-[min(94%,360px)]" : "max-w-[86%]"} rounded-[9px] px-3 py-2 text-[15px] leading-snug shadow-[0_1px_1px_rgba(0,0,0,0.12)] ${m.mine ? "rounded-br-[2px] bg-[#f2d9e2] text-fg" : "rounded-bl-[2px] bg-white text-fg"}`} onContextMenu={(e) => { e.preventDefault(); setSelectedMessageId(m.id); setEmojiPickerOpen(true); }}>
             {m.kind === "image" && m.imageUrl && <img src={m.imageUrl} alt="Photo message" className="mb-1 max-h-64 w-full rounded-[7px] object-cover" />}
-            {m.kind === "voice" && m.audioUrl && <audio src={m.audioUrl} controls className="mb-1 w-full accent-primary" />}
+            {m.kind === "voice" && m.audioUrl && <audio src={m.audioUrl} controls className="mb-1 min-w-0 w-full accent-primary" />}
             {m.kind === "video" && m.videoUrl && <video src={m.videoUrl} controls className="mb-1 max-h-64 w-full rounded-[7px]" />}
             {m.kind === "gif" && m.imageUrl && <img src={m.imageUrl} alt="GIF" className="mb-1 max-h-64 rounded-[7px]" />}
             {m.kind === "file" && m.fileUrl && <a href={m.fileUrl} download={m.fileName || "file"} className="mb-1 flex items-center gap-2 rounded-lg bg-primary/10 p-2 text-sm text-primary"><FileText className="size-5 shrink-0" /><span className="max-w-[180px] truncate">{m.fileName || "File"}</span></a>}
