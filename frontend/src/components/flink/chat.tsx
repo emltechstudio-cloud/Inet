@@ -21,6 +21,7 @@ export function ChatView() {
   const [voicePreview, setVoicePreview] = useState<VoicePreview | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const voiceRef = useRef<HTMLInputElement>(null);
@@ -30,6 +31,7 @@ export function ChatView() {
   const voiceRecorderRef = useRef<MediaRecorder | null>(null);
   const voiceStreamRef = useRef<MediaStream | null>(null);
   const voiceChunksRef = useRef<Blob[]>([]);
+  const recordingFinalizedRef = useRef(false);
   const previewAudioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => bottom.current?.scrollIntoView({ behavior: "smooth" }), [messages.length, voicePreview]);
@@ -38,11 +40,18 @@ export function ChatView() {
     const timer = window.setInterval(() => setRecordingSeconds((seconds) => seconds + 1), 1000);
     return () => window.clearInterval(timer);
   }, [recordingVoice]);
-  useEffect(() => () => {
-    voiceRecorderRef.current?.stop();
-    voiceStreamRef.current?.getTracks().forEach((track) => track.stop());
-    if (voicePreview) URL.revokeObjectURL(voicePreview.url);
-  }, [voicePreview]);
+  useEffect(() => {
+    return () => {
+      const recorder = voiceRecorderRef.current;
+      if (recorder?.state === "recording") {
+        try { recorder.stop(); } catch { /* component is leaving */ }
+      }
+      voiceStreamRef.current?.getTracks().forEach((track) => track.stop());
+      if (voicePreview) URL.revokeObjectURL(voicePreview.url);
+    };
+    // Cleanup must only run when ChatView unmounts, not whenever a preview changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function clearVoicePreview() {
     if (voicePreview) URL.revokeObjectURL(voicePreview.url);
@@ -58,7 +67,14 @@ export function ChatView() {
 
   async function toggleVoiceRecording() {
     if (recordingVoice) {
-      voiceRecorderRef.current?.stop();
+      const recorder = voiceRecorderRef.current;
+      if (!recorder) {
+        setRecordingVoice(false);
+        return;
+      }
+      if (recorder.state === "recording") {
+        try { recorder.stop(); } catch { setRecordingVoice(false); }
+      }
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
@@ -73,8 +89,10 @@ export function ChatView() {
       return;
     }
     try {
+      setRecordingError(null);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       voiceStreamRef.current = stream;
+      recordingFinalizedRef.current = false;
       const preferredMime = "audio/webm;codecs=opus";
       const mimeType = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported(preferredMime)
         ? preferredMime
@@ -84,18 +102,29 @@ export function ChatView() {
       setRecordingSeconds(0);
       recorder.ondataavailable = (event) => { if (event.data.size > 0) voiceChunksRef.current.push(event.data); };
       recorder.onstop = () => {
-        const blob = new Blob(voiceChunksRef.current, { type: recorder.mimeType || "audio/webm" });
-        stream.getTracks().forEach((track) => track.stop());
-        voiceStreamRef.current = null;
-        voiceRecorderRef.current = null;
-        setRecordingVoice(false);
-        if (blob.size > 0) prepareVoice(new File([blob], `voice-${Date.now()}.webm`, { type: blob.type }));
+        if (recordingFinalizedRef.current) return;
+        recordingFinalizedRef.current = true;
+        try {
+          const blob = new Blob(voiceChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+          stream.getTracks().forEach((track) => track.stop());
+          voiceStreamRef.current = null;
+          voiceRecorderRef.current = null;
+          setRecordingVoice(false);
+          if (blob.size > 0) prepareVoice(new File([blob], `voice-${Date.now()}.webm`, { type: blob.type || "audio/webm" }));
+          else setRecordingError("No audio was captured. Please try recording again.");
+        } catch {
+          voiceStreamRef.current = null;
+          voiceRecorderRef.current = null;
+          setRecordingVoice(false);
+          setRecordingError("The voice note could not be prepared. Please try again.");
+        }
       };
       recorder.onerror = () => {
         stream.getTracks().forEach((track) => track.stop());
         voiceStreamRef.current = null;
         voiceRecorderRef.current = null;
         setRecordingVoice(false);
+        setRecordingError("The microphone stopped unexpectedly. Please try again.");
       };
       voiceRecorderRef.current = recorder;
       recorder.start();
@@ -105,6 +134,7 @@ export function ChatView() {
       voiceStreamRef.current = null;
       voiceRecorderRef.current = null;
       setRecordingVoice(false);
+      setRecordingError("Microphone access is unavailable in this browser.");
     }
   }
 
@@ -160,6 +190,7 @@ export function ChatView() {
 
       {sessionEnded && <div className="border-t border-border bg-surface px-4 py-3 text-center"><p className="text-sm text-muted">Session has ended</p><Button className="mt-2" onClick={() => void startNewSession(peer)}><RefreshCw className="mr-2 size-4" />Start New Session</Button></div>}
 
+      {recordingError && <div className="border-t border-danger/20 bg-danger/5 px-3 py-2 text-center text-xs text-danger" role="status">{recordingError}<button type="button" className="ml-2 font-semibold underline" onClick={() => setRecordingError(null)}>Dismiss</button></div>}
       {voicePreview && <div className="border-t border-border bg-surface px-3 py-2"><audio ref={previewAudioRef} src={voicePreview.url} onLoadedMetadata={(e) => setVoicePreview((preview) => preview ? { ...preview, duration: e.currentTarget.duration || 0 } : preview)} onEnded={() => setPreviewPlaying(false)} className="hidden" /><div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-[#fff8fa] px-2 py-2"><Button type="button" size="icon" className="size-10 shrink-0 rounded-full" onClick={togglePreview} aria-label={previewPlaying ? "Pause voice note" : "Play voice note"}>{previewPlaying ? <Pause className="size-4" /> : <Play className="ml-0.5 size-4" />}</Button><div className="flex flex-1 items-center gap-[3px]">{waveform.map((height, index) => <span key={index} className="w-[3px] rounded-full bg-primary/60" style={{ height }} />)}</div><span className="min-w-[34px] text-right text-xs text-muted">{voicePreview.duration ? `${Math.round(voicePreview.duration)}s` : "Ready"}</span><Button type="button" variant="ghost" size="icon" className="size-9 text-danger hover:bg-danger/10" onClick={clearVoicePreview} aria-label="Delete voice note"><Trash2 className="size-4" /></Button><Button type="button" size="icon" className="size-10 rounded-full" onClick={sendPreview} aria-label="Send voice note"><Send className="size-4" /></Button></div></div>}
 
       <form className="flex items-end gap-2 border-t border-border bg-[#fff8fa] px-2 py-2" onSubmit={(e) => { e.preventDefault(); if (draft.trim()) { void sendText(draft); setDraft(""); } }}>
