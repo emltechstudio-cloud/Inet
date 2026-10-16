@@ -25,6 +25,10 @@ function App() {
 class AppErrorBoundary extends React.Component<React.PropsWithChildren, { error: Error | null }> {
   state = { error: null as Error | null };
 
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("Flink runtime error", error, info.componentStack);
+  }
+
   static getDerivedStateFromError(error: Error) {
     return { error };
   }

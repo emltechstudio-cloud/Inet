@@ -8,6 +8,14 @@ import { formatFlinkNumber, formatTime } from "@/lib/utils";
 type VoicePreview = { file: File; url: string; duration: number };
 const waveform = [4, 8, 13, 9, 16, 11, 19, 12, 7, 15, 10, 18, 8, 14, 6, 11, 17, 9, 13, 5, 10, 15, 8, 12];
 
+function revokeVoiceUrl(url: string) {
+  try {
+    if (typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(url);
+  } catch {
+    // A browser may revoke a Blob URL while the preview element is being removed.
+  }
+}
+
 export function ChatView() {
   const {
     activeThread, messages, contacts, sendText, sendImage, sendVoiceNote, sendVideo, sendGif, sendFile,
@@ -48,14 +56,14 @@ export function ChatView() {
         try { recorder.stop(); } catch { /* component is leaving */ }
       }
       voiceStreamRef.current?.getTracks().forEach((track) => track.stop());
-      if (voicePreview) URL.revokeObjectURL(voicePreview.url);
+      if (voicePreview) revokeVoiceUrl(voicePreview.url);
     };
     // Cleanup must only run when ChatView unmounts, not whenever a preview changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function clearVoicePreview() {
-    if (voicePreview) URL.revokeObjectURL(voicePreview.url);
+    if (voicePreview) revokeVoiceUrl(voicePreview.url);
     setVoicePreview(null);
     setPreviewPlaying(false);
   }
@@ -67,7 +75,7 @@ export function ChatView() {
     }
     const nextPreview = { file, url: URL.createObjectURL(file), duration: 0 };
     setVoicePreview((previous) => {
-      if (previous) URL.revokeObjectURL(previous.url);
+      if (previous) revokeVoiceUrl(previous.url);
       return nextPreview;
     });
     setPreviewPlaying(false);
@@ -99,9 +107,7 @@ export function ChatView() {
     }
     const activeRecorder = voiceRecorderRef.current;
     if (activeRecorder) {
-      if (activeRecorder.state === "recording") {
-        try { activeRecorder.stop(); } catch { /* recorder already stopped */ }
-      }
+      stopVoiceRecording();
       return;
     }
     try {
@@ -140,6 +146,7 @@ export function ChatView() {
         }
       };
       recorder.onerror = () => {
+        recordingFinalizedRef.current = true;
         stream.getTracks().forEach((track) => track.stop());
         voiceStreamRef.current = null;
         voiceRecorderRef.current = null;
