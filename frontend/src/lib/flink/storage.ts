@@ -215,6 +215,26 @@ export const flinkStorage = {
     await tx("messages", "readwrite", (s) => s.put(m));
   },
 
+  async updateMessageStatus(id: string, status: "sent" | "delivered" | "read") {
+    const db = await openDb();
+    await new Promise<void>((resolve, reject) => {
+      const t = db.transaction("messages", "readwrite");
+      const req = t.objectStore("messages").get(id);
+      req.onsuccess = () => {
+        const msg = req.result as ChatMessage;
+        if (msg) {
+          msg.status = status;
+          const updateReq = t.objectStore("messages").put(msg);
+          updateReq.onsuccess = () => resolve();
+          updateReq.onerror = () => reject(updateReq.error);
+        } else {
+          resolve();
+        }
+      };
+      req.onerror = () => reject(req.error);
+    });
+  },
+
   async getCalls(): Promise<CallLog[]> {
     const all = (await tx<CallLog[]>("calls", "readonly", (s) => s.getAll())) ?? [];
     return all.sort((a, b) => b.ts - a.ts);

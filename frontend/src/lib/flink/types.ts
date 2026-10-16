@@ -1,4 +1,4 @@
-export type CommMode = "chat" | "ping" | "voice" | "video";
+export type CommMode = "chat" | "ping" | "voice" | "video" | "screen";
 
 export type FlinkProfile = {
   flinkNumber: string;
@@ -25,17 +25,30 @@ export type Contact = {
   flinkNumber: string;
   name: string;
   lastSeen: number;
+  online?: boolean;
+  lastOnline?: number;
+};
+
+export type Reaction = {
+  emoji: string;
+  count: number;
+  users: string[];
 };
 
 export type ChatMessage = {
   id: string;
   threadId: string;
   from: string;
-  kind: "text" | "image" | "system";
+  kind: "text" | "image" | "system" | "voice" | "video" | "gif";
   text?: string;
   imageUrl?: string;
+  audioUrl?: string;
+  videoUrl?: string;
   ts: number;
   mine: boolean;
+  status?: "sent" | "delivered" | "read";
+  duration?: number;
+  reactions?: Record<string, Reaction>;
 };
 
 export type Thread = {
@@ -46,6 +59,9 @@ export type Thread = {
   groupId?: string;
   lastText: string;
   lastTs: number;
+  sessionActive?: boolean;
+  sessionId?: string;
+  unreadCount?: number;
 };
 
 export type CallLog = {
@@ -94,4 +110,21 @@ export type SignalEvent = {
   peers?: Array<{ peer_id: string; flink_number?: string | null }>;
   protocol?: number;
   session_id?: string;
+};
+
+export type PeerStatus = {
+  flinkNumber: string;
+  online: boolean;
+  lastSeen: number;
+  sessionActive: boolean;
+  inCall?: boolean;
+};
+
+export type RoomParticipant = {
+  flinkNumber: string;
+  name?: string;
+  joinedAt: number;
+  videoOn: boolean;
+  audioOn: boolean;
+  screenSharing: boolean;
 };

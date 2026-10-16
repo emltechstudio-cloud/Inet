@@ -1,12 +1,12 @@
-import { useEffect, useRef } from "react";
-import { Mic, MicOff, PhoneOff, Video, VideoOff } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Mic, MicOff, PhoneOff, Video, VideoOff, Monitor, MonitorOff, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NumberAvatar } from "./mark";
 import { useFlink } from "@/lib/flink/store";
 import { formatFlinkNumber } from "@/lib/utils";
 
 export function IncomingSheet() {
-  const { incoming, acceptIncoming, declineIncoming, contacts } = useFlink();
+  const { incoming, acceptIncoming, declineIncoming, contacts, roomParticipants } = useFlink();
   if (!incoming) return null;
   const name =
     incoming.groupName ||
@@ -14,6 +14,7 @@ export function IncomingSheet() {
     formatFlinkNumber(incoming.from);
   const verb =
     incoming.mode === "voice" ? "a voice call" : incoming.mode === "video" ? "a video call" : "to talk";
+  const participantCount = roomParticipants.size;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-fg/50 p-4 md:items-center">
       <div className="w-full max-w-sm rounded-[28px] bg-surface p-6 text-center shadow-[0_8px_32px_rgba(123,21,53,0.2)]">
@@ -23,6 +24,12 @@ export function IncomingSheet() {
           {incoming.groupName ? `${formatFlinkNumber(incoming.from)} in ${incoming.groupName}` : formatFlinkNumber(incoming.from)}{" "}
           wants {verb}.
         </p>
+        {participantCount > 0 && (
+          <p className="mt-2 flex items-center justify-center gap-1 text-sm text-muted">
+            <Users className="size-4" />
+            {participantCount} participant{participantCount > 1 ? "s" : ""}
+          </p>
+        )}
         <div className="mt-6 flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={declineIncoming}>
             Decline
@@ -37,10 +44,11 @@ export function IncomingSheet() {
 }
 
 export function CallOverlay() {
-  const { outgoing, session, callStatus, remoteMedia, hangup, cancelOutgoing, muted, videoOff, toggleMute, toggleVideo } =
+  const { outgoing, session, callStatus, remoteMedia, hangup, cancelOutgoing, muted, videoOff, toggleMute, toggleVideo, toggleScreenShare, isScreenSharing, screenStream, roomParticipants } =
     useFlink();
   const localRef = useRef<HTMLVideoElement>(null);
   const remoteRef = useRef<HTMLVideoElement>(null);
+  const screenRef = useRef<HTMLVideoElement>(null);
   const inCall = Boolean(session && outgoing && (outgoing.mode === "voice" || outgoing.mode === "video"));
 
   useEffect(() => {
@@ -52,15 +60,32 @@ export function CallOverlay() {
     if (remoteRef.current && first) remoteRef.current.srcObject = first.stream;
   }, [remoteMedia]);
 
+  useEffect(() => {
+    if (screenRef.current && screenStream) screenRef.current.srcObject = screenStream;
+  }, [screenStream]);
+
   if (!inCall || !outgoing) return null;
   const video = outgoing.mode === "video";
+  const participantCount = roomParticipants.size;
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-call text-call-fg">
+      <div className="pointer-events-none absolute top-4 left-4 z-10 flex items-center gap-2 rounded-full bg-call/80 px-3 py-1.5 text-sm">
+        <Users className="size-4" />
+        {participantCount} participant{participantCount > 1 ? "s" : ""}
+      </div>
       <div className="relative min-h-0 flex-1">
         {video ? (
           <>
             <video ref={remoteRef} autoPlay playsInline className="h-full w-full object-cover" />
+            {isScreenSharing && screenStream && (
+              <video
+                ref={screenRef}
+                autoPlay
+                playsInline
+                className="absolute inset-0 h-full w-full object-contain"
+              />
+            )}
             <video
               ref={localRef}
               autoPlay
@@ -80,6 +105,12 @@ export function CallOverlay() {
           <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-call/70 to-transparent p-5 pt-10 text-center">
             <p className="font-display text-xl">{formatFlinkNumber(outgoing.to)}</p>
             <p className="text-sm text-subtle">{callStatus}</p>
+          </div>
+        )}
+        {isScreenSharing && (
+          <div className="pointer-events-none absolute top-4 right-4 rounded-full bg-green-500/20 px-3 py-1 text-sm text-green-200">
+            <Monitor className="size-4" />
+            Sharing screen
           </div>
         )}
       </div>
@@ -104,6 +135,15 @@ export function CallOverlay() {
             {videoOff ? <VideoOff className="size-5" /> : <Video className="size-5" />}
           </Button>
         )}
+        <Button
+          size="round"
+          variant="secondary"
+          className={isScreenSharing ? "bg-primary text-primary-fg" : "bg-call-fg/10 text-call-fg border-0"}
+          onClick={() => void toggleScreenShare()}
+          aria-label={isScreenSharing ? "Stop sharing" : "Share screen"}
+        >
+          {isScreenSharing ? <MonitorOff className="size-5" /> : <Monitor className="size-5" />}
+        </Button>
         <Button size="round" variant="danger" onClick={session && remoteMedia.length ? hangup : cancelOutgoing} aria-label="End">
           <PhoneOff className="size-5" />
         </Button>
@@ -113,14 +153,23 @@ export function CallOverlay() {
 }
 
 export function WaitingBanner() {
-  const { outgoing, session, callStatus, cancelOutgoing } = useFlink();
+  const { outgoing, session, callStatus, cancelOutgoing, sessionEnded, roomParticipants } = useFlink();
   if (!outgoing || !session) return null;
   if (outgoing.mode === "voice" || outgoing.mode === "video") return null;
+  const participantCount = roomParticipants.size;
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border bg-mist px-4 py-2.5 text-sm">
-      <p className="text-muted">
-        {callStatus || `Waiting for ${formatFlinkNumber(outgoing.to)}`}
-      </p>
+      <div className="flex items-center gap-2">
+        <p className="text-muted">
+          {sessionEnded ? "Session ended - " : callStatus || `Waiting for ${formatFlinkNumber(outgoing.to)}`}
+        </p>
+        {participantCount > 0 && (
+          <span className="flex items-center gap-1 text-muted">
+            <Users className="size-4" />
+            {participantCount}
+          </span>
+        )}
+      </div>
       <button type="button" className="font-semibold text-primary" onClick={cancelOutgoing}>
         Cancel
       </button>

@@ -16,10 +16,25 @@ import type {
   FlinkProfile,
   FlinkSimFile,
   IncomingRequest,
+  PeerStatus,
+  Reaction,
+  RoomParticipant,
   Thread,
 } from "./types";
 
-type RemoteMedia = { id: string; stream: MediaStream };
+type RemoteMedia = { id: string; stream: MediaStream; kind?: "camera" | "screen" };
+
+function ensureAudioContext() {
+  if (typeof window !== "undefined") {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioContext) {
+      const ctx = new AudioContext();
+      if (ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
+      }
+    }
+  }
+}
 
 type FlinkState = {
   boot: "loading" | "auth" | "ready";
@@ -42,6 +57,11 @@ type FlinkState = {
   mailbox: SignalingSocket | null;
   busy: boolean;
   notice: string | null;
+  peerStatuses: Map<string, PeerStatus>;
+  sessionEnded: boolean;
+  roomParticipants: Map<string, RoomParticipant>;
+  screenStream: MediaStream | null;
+  isScreenSharing: boolean;
 
   bootApp: () => Promise<void>;
   createAccount: (password: string) => Promise<void>;
@@ -61,7 +81,18 @@ type FlinkState = {
   openThread: (thread: Thread) => Promise<void>;
   sendText: (text: string) => Promise<void>;
   sendImage: (file: File) => Promise<void>;
+  sendVoiceNote: (file: File) => Promise<void>;
+  sendVideo: (file: File) => Promise<void>;
+  sendGif: (file: File) => Promise<void>;
+  addReaction: (messageId: string, emoji: string) => Promise<void>;
   hangup: () => void;
+  endSession: () => void;
+  toggleScreenShare: () => Promise<void>;
+  updatePeerStatus: (number: string, online: boolean, sessionActive?: boolean, inCall?: boolean) => void;
+  updateParticipant: (number: string, updates: Partial<RoomParticipant>) => void;
+  markMessageDelivered: (messageId: string) => Promise<void>;
+  markMessageRead: (messageId: string) => Promise<void>;
+  startNewSession: (peerNumber: string) => Promise<void>;
   toggleMute: () => void;
   toggleVideo: () => void;
   startRoom: (mode: CommMode, title: string) => { id: string; url: string };
@@ -82,6 +113,13 @@ function threadIdFor(number: string) {
 
 async function mediaFor(mode: CommMode) {
   if (mode === "chat" || mode === "ping") return undefined;
+  if (mode === "screen") {
+    try {
+      return await navigator.mediaDevices.getDisplayMedia({ video: true });
+    } catch {
+      return undefined;
+    }
+  }
   return navigator.mediaDevices.getUserMedia({
     audio: { echoCancellation: true, noiseSuppression: true },
     video: mode === "video" ? { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } } : false,
@@ -109,6 +147,11 @@ export const useFlink = create<FlinkState>((set, get) => ({
   mailbox: null,
   busy: false,
   notice: null,
+  peerStatuses: new Map(),
+  sessionEnded: false,
+  roomParticipants: new Map(),
+  screenStream: null,
+  isScreenSharing: false,
 
   async bootApp() {
     try {
@@ -466,6 +509,7 @@ export const useFlink = create<FlinkState>((set, get) => ({
       text: trimmed,
       ts: Date.now(),
       mine: true,
+      status: "sent",
     };
     await flinkStorage.putMessage(msg);
     const next = { ...thread, lastText: trimmed, lastTs: msg.ts };
@@ -495,6 +539,7 @@ export const useFlink = create<FlinkState>((set, get) => ({
       imageUrl: dataUrl,
       ts: Date.now(),
       mine: true,
+      status: "sent",
     };
     await flinkStorage.putMessage(msg);
     const next = { ...thread, lastText: "Photo", lastTs: msg.ts };
@@ -509,7 +554,208 @@ export const useFlink = create<FlinkState>((set, get) => ({
 
   hangup() {
     get().session?.close();
-    set({ session: null, outgoing: null, incoming: null, remoteMedia: [], callStatus: "", muted: false, videoOff: false });
+    set({ session: null, outgoing: null, incoming: null, remoteMedia: [], callStatus: "", muted: false, videoOff: false, sessionEnded: true, isScreenSharing: false, screenStream: null });
+  },
+
+  endSession() {
+    get().session?.close();
+    set({ session: null, outgoing: null, incoming: null, remoteMedia: [], callStatus: "", muted: false, videoOff: false, sessionEnded: true, isScreenSharing: false, screenStream: null });
+  },
+
+  async startNewSession(peerNumber: string) {
+    const profile = get().profile;
+    if (!profile) return;
+    set({ sessionEnded: false });
+    await get().approach(peerNumber, "chat");
+  },
+
+  updatePeerStatus(number: string, online: boolean, sessionActive?: boolean, inCall?: boolean) {
+    set((s) => {
+      const statuses = new Map(s.peerStatuses);
+      statuses.set(number, {
+        flinkNumber: number,
+        online,
+        lastSeen: Date.now(),
+        sessionActive: sessionActive ?? false,
+        inCall,
+      });
+      return { peerStatuses: statuses };
+    });
+  },
+
+  updateParticipant(number: string, updates: Partial<RoomParticipant>) {
+    set((s) => {
+      const participants = new Map(s.roomParticipants);
+      const existing = participants.get(number);
+      participants.set(number, { ...existing, ...updates } as RoomParticipant);
+      return { roomParticipants: participants };
+    });
+  },
+
+  async markMessageDelivered(messageId: string) {
+    const messages = get().messages;
+    const msgIndex = messages.findIndex((m) => m.id === messageId);
+    if (msgIndex !== -1 && messages[msgIndex].status !== "read") {
+      const msg = messages[msgIndex];
+      const updatedMsg: ChatMessage = { ...msg, status: "delivered" as const };
+      await flinkStorage.putMessage(updatedMsg);
+      set((s) => ({
+        messages: s.messages.map((m) => (m.id === messageId ? updatedMsg : m)),
+      }));
+      get().session?.sendChat({ kind: "receipt", messageId, status: "delivered" as const, ts: Date.now(), id: messageId });
+    }
+  },
+
+  async markMessageRead(messageId: string) {
+    const messages = get().messages;
+    const msgIndex = messages.findIndex((m) => m.id === messageId);
+    if (msgIndex !== -1 && messages[msgIndex].status !== "read") {
+      const msg = messages[msgIndex];
+      const updatedMsg: ChatMessage = { ...msg, status: "read" as const };
+      await flinkStorage.putMessage(updatedMsg);
+      set((s) => ({
+        messages: s.messages.map((m) => (m.id === messageId ? updatedMsg : m)),
+      }));
+      get().session?.sendChat({ kind: "receipt", messageId, status: "read" as const, ts: Date.now(), id: messageId });
+    }
+  },
+
+  async sendVoiceNote(file: File) {
+    if (file.size > 5_000_000) {
+      toast.error("Keep voice notes under 5 MB");
+      return;
+    }
+    const thread = get().activeThread;
+    const profile = get().profile;
+    if (!thread || !profile) return;
+    ensureAudioContext();
+    const dataUrl = await fileToDataUrl(file);
+    const msg: ChatMessage = {
+      id: randomId(10),
+      threadId: thread.id,
+      from: profile.flinkNumber,
+      kind: "voice",
+      audioUrl: dataUrl,
+      ts: Date.now(),
+      mine: true,
+      status: "sent" as const,
+      duration: Math.round(file.size / 1000),
+    };
+    await flinkStorage.putMessage(msg);
+    const next = { ...thread, lastText: "Voice note", lastTs: msg.ts };
+    await flinkStorage.putThread(next);
+    set({
+      messages: [...get().messages, msg],
+      threads: [next, ...get().threads.filter((t) => t.id !== next.id)],
+      activeThread: next,
+    });
+    get().session?.sendChat({ kind: "voice", audio: dataUrl, id: msg.id, ts: msg.ts, duration: msg.duration });
+  },
+
+  async sendVideo(file: File) {
+    if (file.size > 50_000_000) {
+      toast.error("Keep videos under 50 MB");
+      return;
+    }
+    const thread = get().activeThread;
+    const profile = get().profile;
+    if (!thread || !profile) return;
+    const dataUrl = await fileToDataUrl(file);
+    const msg: ChatMessage = {
+      id: randomId(10),
+      threadId: thread.id,
+      from: profile.flinkNumber,
+      kind: "video",
+      videoUrl: dataUrl,
+      ts: Date.now(),
+      mine: true,
+      status: "sent" as const,
+      duration: Math.round(file.size / 1000),
+    };
+    await flinkStorage.putMessage(msg);
+    const next = { ...thread, lastText: "Video", lastTs: msg.ts };
+    await flinkStorage.putThread(next);
+    set({
+      messages: [...get().messages, msg],
+      threads: [next, ...get().threads.filter((t) => t.id !== next.id)],
+      activeThread: next,
+    });
+    get().session?.sendChat({ kind: "video", video: dataUrl, id: msg.id, ts: msg.ts, duration: msg.duration });
+  },
+
+  async sendGif(file: File) {
+    if (file.size > 5_000_000) {
+      toast.error("Keep GIFs under 5 MB");
+      return;
+    }
+    const thread = get().activeThread;
+    const profile = get().profile;
+    if (!thread || !profile) return;
+    const dataUrl = await fileToDataUrl(file);
+    const msg: ChatMessage = {
+      id: randomId(10),
+      threadId: thread.id,
+      from: profile.flinkNumber,
+      kind: "gif",
+      imageUrl: dataUrl,
+      ts: Date.now(),
+      mine: true,
+      status: "sent" as const,
+    };
+    await flinkStorage.putMessage(msg);
+    const next = { ...thread, lastText: "GIF", lastTs: msg.ts };
+    await flinkStorage.putThread(next);
+    set({
+      messages: [...get().messages, msg],
+      threads: [next, ...get().threads.filter((t) => t.id !== next.id)],
+      activeThread: next,
+    });
+    get().session?.sendChat({ kind: "gif", image: dataUrl, id: msg.id, ts: msg.ts });
+  },
+
+  async addReaction(messageId: string, emoji: string) {
+    const messages = get().messages;
+    const profile = get().profile;
+    if (!profile) return;
+    const msgIndex = messages.findIndex((m) => m.id === messageId);
+    if (msgIndex === -1) return;
+    const msg = messages[msgIndex];
+    const reactions = msg.reactions ?? {};
+    const existing = reactions[emoji];
+    const newReaction: Reaction = {
+      emoji,
+      count: existing ? existing.count + 1 : 1,
+      users: existing ? [...existing.users, profile.flinkNumber] : [profile.flinkNumber],
+    };
+    const updatedMsg: ChatMessage = { ...msg, reactions: { ...reactions, [emoji]: newReaction } };
+    await flinkStorage.putMessage(updatedMsg);
+    set((s) => ({
+      messages: s.messages.map((m) => (m.id === messageId ? updatedMsg : m)),
+    }));
+    get().session?.sendChat({ kind: "reaction", messageId, emoji, ts: Date.now(), id: messageId });
+  },
+
+  async toggleScreenShare() {
+    const session = get().session;
+    const isSharing = get().isScreenSharing;
+    if (!session) {
+      toast.error("No active session");
+      return;
+    }
+    if (isSharing) {
+      get().screenStream?.getTracks().forEach((t) => t.stop());
+      set({ isScreenSharing: false, screenStream: null });
+      session.attachLocal(get().remoteMedia.length > 0 ? get().remoteMedia[0].stream : new MediaStream());
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        set({ isScreenSharing: true, screenStream: stream });
+        session.attachLocal(stream);
+        get().session?.sendChat({ kind: "screen_start", ts: Date.now(), id: randomId(10) });
+      } catch (err) {
+        toast.error("Screen sharing denied");
+      }
+    }
   },
 
   toggleMute() {
@@ -614,15 +860,77 @@ async function joinSession(sid: string, mode: CommMode, peerLabel: string) {
     onChat: async (from, data) => {
       const number = /^\d{6}$/.test(from) ? from : peerLabel;
       const tid = threadIdFor(number);
+      
+      // Handle receipts
+      if (data.kind === "receipt" && data.messageId && data.status) {
+        if (data.status === "delivered") {
+          await useFlink.getState().markMessageDelivered(data.messageId);
+        } else if (data.status === "read") {
+          await useFlink.getState().markMessageRead(data.messageId);
+        }
+        return;
+      }
+      
+      // Handle reactions
+      if (data.kind === "reaction" && data.emoji && data.messageId) {
+        useFlink.setState((s) => ({
+          messages: s.messages.map((m): ChatMessage => {
+            if (m.id !== data.messageId) return m;
+            const reactions = m.reactions ?? {};
+            const emoji = data.emoji as string;
+            const existing = reactions[emoji];
+            return {
+              ...m,
+              reactions: {
+                ...reactions,
+                [emoji]: {
+                  emoji,
+                  count: existing ? existing.count + 1 : 1,
+                  users: existing ? [...existing.users, from] : [from],
+                },
+              },
+            };
+          }),
+        }));
+        return;
+      }
+      
+      // Handle screen sharing start/stop
+      if (data.kind === "screen_start") {
+        useFlink.setState({ isScreenSharing: true });
+        return;
+      }
+      if (data.kind === "screen_stop") {
+        useFlink.setState({ isScreenSharing: false });
+        return;
+      }
+      
+      // Handle online status updates
+      if (data.kind === "peer_online") {
+        const sessionActive = data.sessionActive as boolean | undefined;
+        const inCall = data.inCall as boolean | undefined;
+        useFlink.getState().updatePeerStatus(from, true, sessionActive, inCall);
+        return;
+      }
+      if (data.kind === "peer_offline") {
+        useFlink.getState().updatePeerStatus(from, false, false, false);
+        return;
+      }
+      
+      // Handle regular messages
       const msg: ChatMessage = {
         id: data.id,
         threadId: tid,
         from,
-        kind: data.kind === "image" ? "image" : "text",
+        kind: data.kind === "image" ? "image" : data.kind === "voice" ? "voice" : data.kind === "video" ? "video" : data.kind === "gif" ? "gif" : "text",
         text: data.text,
         imageUrl: data.image,
+        audioUrl: data.audio,
+        videoUrl: data.video,
         ts: data.ts,
         mine: false,
+        status: "delivered" as const,
+        duration: data.duration,
       };
       await flinkStorage.putMessage(msg);
       const thread: Thread = {
@@ -630,7 +938,7 @@ async function joinSession(sid: string, mode: CommMode, peerLabel: string) {
         kind: "direct",
         title: number,
         peerNumber: number,
-        lastText: data.text || "Photo",
+        lastText: data.text || (data.kind === "image" ? "Photo" : data.kind === "voice" ? "Voice note" : data.kind === "video" ? "Video" : data.kind === "gif" ? "GIF" : ""),
         lastTs: data.ts,
       };
       await flinkStorage.putThread(thread);
@@ -638,14 +946,41 @@ async function joinSession(sid: string, mode: CommMode, peerLabel: string) {
         threads: [thread, ...s.threads.filter((t) => t.id !== tid)],
         messages: s.activeThread?.id === tid ? [...s.messages, msg] : s.messages,
       }));
+      // Auto-mark as delivered when received
+      if (data.id) {
+        void useFlink.getState().markMessageDelivered(data.id);
+      }
     },
     onPeerMedia: (id, mediaStream) => {
       useFlink.setState((s) => ({
         remoteMedia: [...s.remoteMedia.filter((m) => m.id !== id), { id, stream: mediaStream }],
       }));
     },
-    onPeerLeft: (id) => {
+    onPeerLeft: (id, flinkNumber?: string) => {
       useFlink.setState((s) => ({ remoteMedia: s.remoteMedia.filter((m) => m.id !== id) }));
+      if (flinkNumber) {
+        useFlink.getState().updatePeerStatus(flinkNumber, false, false, false);
+      }
+    },
+    onPeerOnline: (flinkNumber: string, online: boolean, sessionActive?: boolean, inCall?: boolean) => {
+      useFlink.getState().updatePeerStatus(flinkNumber, online, sessionActive, inCall);
+    },
+    onMessageDelivered: (messageId: string) => {
+      void useFlink.getState().markMessageDelivered(messageId);
+    },
+    onMessageRead: (messageId: string) => {
+      void useFlink.getState().markMessageRead(messageId);
+    },
+    onScreenShare: (peerId: string, sharing: boolean) => {
+      useFlink.setState((s) => ({
+        roomParticipants: new Map(s.roomParticipants).set(peerId, {
+          flinkNumber: peerId,
+          joinedAt: Date.now(),
+          videoOn: true,
+          audioOn: true,
+          screenSharing: sharing,
+        } as RoomParticipant),
+      }));
     },
     onDeclined: () => {
       toast.message("They declined");

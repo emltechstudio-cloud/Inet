@@ -12,13 +12,33 @@ type PeerSlot = {
   pending: RTCIceCandidateInit[];
 };
 
+export type ChatData = {
+  kind: string;
+  text?: string;
+  image?: string;
+  audio?: string;
+  video?: string;
+  id: string;
+  ts: number;
+  messageId?: string;
+  duration?: number;
+  emoji?: string;
+  status?: "sent" | "delivered" | "read";
+  sessionActive?: boolean;
+  inCall?: boolean;
+};
+
 export type SessionHandlers = {
   onStatus: (text: string) => void;
-  onChat: (from: string, data: { kind: string; text?: string; image?: string; id: string; ts: number }) => void;
+  onChat: (from: string, data: ChatData) => void;
   onPeerMedia: (peerId: string, stream: MediaStream) => void;
-  onPeerLeft: (peerId: string) => void;
+  onPeerLeft: (peerId: string, flinkNumber?: string) => void;
   onConnected: (peers: number) => void;
   onDeclined?: () => void;
+  onPeerOnline?: (flinkNumber: string, online: boolean, sessionActive?: boolean, inCall?: boolean) => void;
+  onMessageDelivered?: (messageId: string) => void;
+  onMessageRead?: (messageId: string) => void;
+  onScreenShare?: (peerId: string, sharing: boolean) => void;
 };
 
 export class FlinkSession {
@@ -59,7 +79,7 @@ export class FlinkSession {
     }
   }
 
-  sendChat(data: { kind: string; text?: string; image?: string; id: string; ts: number }) {
+  sendChat(data: ChatData) {
     const raw = JSON.stringify({ v: 1, ...data });
     for (const slot of this.peers.values()) {
       if (slot.channel?.readyState === "open") slot.channel.send(raw);
@@ -119,6 +139,14 @@ export class FlinkSession {
     }
     if (event.type === "peer-left" && event.peer?.peer_id) {
       this.dropPeer(event.peer.peer_id);
+      return;
+    }
+    if (event.type === "peer-online" && event.peer?.peer_id && event.peer.flink_number) {
+      this.handlers.onPeerOnline?.(event.peer.flink_number, event.payload as boolean, undefined, undefined);
+      return;
+    }
+    if (event.type === "peer-offline" && event.peer?.peer_id && event.peer.flink_number) {
+      this.handlers.onPeerOnline?.(event.peer.flink_number, false, false, false);
       return;
     }
     if (event.type === "session-decline") {
@@ -222,18 +250,12 @@ export class FlinkSession {
     };
     channel.onmessage = (ev) => {
       try {
-        const data = JSON.parse(String(ev.data)) as {
-          kind: string;
-          text?: string;
-          image?: string;
-          id: string;
-          ts: number;
-        };
+        const data = JSON.parse(String(ev.data)) as ChatData;
         this.handlers.onChat(slot.flinkNumber || slot.id, data);
       } catch {
         /* ignore */
       }
-    };
+    }
   }
 
   private async handleOffer(slot: PeerSlot, desc: RTCSessionDescriptionInit) {
@@ -275,6 +297,38 @@ export class FlinkSession {
     if (!slot) return;
     slot.pc.close();
     this.peers.delete(id);
-    this.handlers.onPeerLeft(id);
+    this.handlers.onPeerLeft(id, slot.flinkNumber ?? undefined);
+  }
+
+  sendReceipt(messageId: string, status: "delivered" | "read") {
+    const raw = JSON.stringify({ v: 1, kind: "receipt", messageId, status, ts: Date.now() });
+    for (const slot of this.peers.values()) {
+      if (slot.channel?.readyState === "open") slot.channel.send(raw);
+    }
+  }
+
+  sendOnlineStatus(online: boolean, sessionActive?: boolean, inCall?: boolean) {
+    const raw = JSON.stringify({ v: 1, kind: "peer_online", online, sessionActive, inCall, ts: Date.now() });
+    for (const slot of this.peers.values()) {
+      if (slot.channel?.readyState === "open") slot.channel.send(raw);
+    }
+  }
+
+  replaceStream(stream: MediaStream) {
+    this.localStream = stream;
+    for (const slot of this.peers.values()) {
+      for (const track of stream.getTracks()) {
+        const existing = slot.pc.getSenders().find((s) => s.track?.kind === track.kind);
+        if (existing) void existing.replaceTrack(track);
+        else slot.pc.addTrack(track, stream);
+      }
+    }
+  }
+
+  sendScreenShare(sharing: boolean) {
+    const raw = JSON.stringify({ v: 1, kind: sharing ? "screen_start" : "screen_stop", ts: Date.now() });
+    for (const slot of this.peers.values()) {
+      if (slot.channel?.readyState === "open") slot.channel.send(raw);
+    }
   }
 }

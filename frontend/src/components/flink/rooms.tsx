@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Copy, Link2, MessageCircle, Phone, Video } from "lucide-react";
+import { Copy, Link2, MessageCircle, Phone, Video, Users, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFlink } from "@/lib/flink/store";
+import { NumberAvatar } from "./mark";
+import { formatFlinkNumber } from "@/lib/utils";
 import type { CommMode } from "@/lib/flink/types";
 
 export function RoomsView() {
@@ -78,6 +80,39 @@ export function RoomsView() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+export function RoomParticipants() {
+  const { roomParticipants } = useFlink();
+  const participants = Array.from(roomParticipants.values());
+  
+  if (participants.length === 0) return null;
+  
+  return (
+    <div className="flex -space-x-2">
+      {participants.slice(0, 5).map((p) => (
+        <NumberAvatar key={p.flinkNumber} seed={p.flinkNumber} label={p.name || formatFlinkNumber(p.flinkNumber)} size={32} />
+      ))}
+      {participants.length > 5 && (
+        <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-surface bg-mist text-xs font-semibold">
+          +{participants.length - 5}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ScreenShareIndicator() {
+  const { isScreenSharing } = useFlink();
+  
+  if (!isScreenSharing) return null;
+  
+  return (
+    <div className="flex items-center gap-2 rounded-full bg-green-500/20 px-3 py-1 text-sm text-green-200">
+      <Monitor className="size-4" />
+      Screen sharing active
     </div>
   );
 }
