@@ -8,14 +8,6 @@ import { formatFlinkNumber, formatTime } from "@/lib/utils";
 type VoicePreview = { file: File; url: string; duration: number };
 const waveform = [4, 8, 13, 9, 16, 11, 19, 12, 7, 15, 10, 18, 8, 14, 6, 11, 17, 9, 13, 5, 10, 15, 8, 12];
 
-function revokeVoiceUrl(url: string) {
-  try {
-    if (typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(url);
-  } catch {
-    // A browser may revoke a Blob URL while the preview element is being removed.
-  }
-}
-
 export function ChatView() {
   const {
     activeThread, messages, contacts, sendText, sendImage, sendVoiceNote, sendVideo, sendGif, sendFile,
@@ -41,9 +33,15 @@ export function ChatView() {
   const voiceChunksRef = useRef<Blob[]>([]);
   const recordingFinalizedRef = useRef(false);
   const recordingStoppingRef = useRef(false);
+  const previewUrlsRef = useRef<Set<string>>(new Set());
   const previewAudioRef = useRef<HTMLAudioElement>(null);
 
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: "smooth" }), [messages.length, voicePreview]);
+  useEffect(() => {
+    const element = bottom.current;
+    if (element && typeof element.scrollIntoView === "function") {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages.length, voicePreview]);
   useEffect(() => {
     if (!recordingVoice) return;
     const timer = window.setInterval(() => setRecordingSeconds((seconds) => seconds + 1), 1000);
@@ -56,14 +54,17 @@ export function ChatView() {
         try { recorder.stop(); } catch { /* component is leaving */ }
       }
       voiceStreamRef.current?.getTracks().forEach((track) => track.stop());
-      if (voicePreview) revokeVoiceUrl(voicePreview.url);
+      if (typeof URL.revokeObjectURL === "function") {
+        previewUrlsRef.current.forEach((url) => {
+          try { URL.revokeObjectURL(url); } catch { /* browser cleanup is best effort */ }
+        });
+      }
     };
     // Cleanup must only run when ChatView unmounts, not whenever a preview changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function clearVoicePreview() {
-    if (voicePreview) revokeVoiceUrl(voicePreview.url);
     setVoicePreview(null);
     setPreviewPlaying(false);
   }
@@ -73,11 +74,9 @@ export function ChatView() {
       setRecordingError("Keep voice notes under 5 MB.");
       return;
     }
-    const nextPreview = { file, url: URL.createObjectURL(file), duration: 0 };
-    setVoicePreview((previous) => {
-      if (previous) revokeVoiceUrl(previous.url);
-      return nextPreview;
-    });
+    const url = URL.createObjectURL(file);
+    previewUrlsRef.current.add(url);
+    setVoicePreview({ file, url, duration: 0 });
     setPreviewPlaying(false);
   }
 
