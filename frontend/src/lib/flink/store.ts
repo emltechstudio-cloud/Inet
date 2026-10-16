@@ -61,6 +61,7 @@ type FlinkState = {
   sessionEnded: boolean;
   roomParticipants: Map<string, RoomParticipant>;
   screenStream: MediaStream | null;
+  localCameraStream: MediaStream | null;
   isScreenSharing: boolean;
 
   bootApp: () => Promise<void>;
@@ -114,12 +115,14 @@ function threadIdFor(number: string) {
 async function mediaFor(mode: CommMode) {
   if (mode === "chat" || mode === "ping") return undefined;
   if (mode === "screen") {
+    if (!navigator.mediaDevices?.getDisplayMedia) throw new Error("Screen sharing is not supported by this browser.");
     try {
       return await navigator.mediaDevices.getDisplayMedia({ video: true });
     } catch {
       return undefined;
     }
   }
+  if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera and microphone access is not supported by this browser.");
   return navigator.mediaDevices.getUserMedia({
     audio: { echoCancellation: true, noiseSuppression: true },
     video: mode === "video" ? { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } } : false,
@@ -151,6 +154,7 @@ export const useFlink = create<FlinkState>((set, get) => ({
   sessionEnded: false,
   roomParticipants: new Map(),
   screenStream: null,
+  localCameraStream: null,
   isScreenSharing: false,
 
   async bootApp() {
@@ -554,12 +558,12 @@ export const useFlink = create<FlinkState>((set, get) => ({
 
   hangup() {
     get().session?.close();
-    set({ session: null, outgoing: null, incoming: null, remoteMedia: [], callStatus: "", muted: false, videoOff: false, sessionEnded: true, isScreenSharing: false, screenStream: null });
+    set({ session: null, outgoing: null, incoming: null, remoteMedia: [], callStatus: "", muted: false, videoOff: false, sessionEnded: true, isScreenSharing: false, screenStream: null, localCameraStream: null, roomParticipants: new Map() });
   },
 
   endSession() {
     get().session?.close();
-    set({ session: null, outgoing: null, incoming: null, remoteMedia: [], callStatus: "", muted: false, videoOff: false, sessionEnded: true, isScreenSharing: false, screenStream: null });
+    set({ session: null, outgoing: null, incoming: null, remoteMedia: [], callStatus: "", muted: false, videoOff: false, sessionEnded: true, isScreenSharing: false, screenStream: null, localCameraStream: null, roomParticipants: new Map() });
   },
 
   async startNewSession(peerNumber: string) {
@@ -745,7 +749,9 @@ export const useFlink = create<FlinkState>((set, get) => ({
     if (isSharing) {
       get().screenStream?.getTracks().forEach((t) => t.stop());
       set({ isScreenSharing: false, screenStream: null });
-      session.attachLocal(get().remoteMedia.length > 0 ? get().remoteMedia[0].stream : new MediaStream());
+      const camera = get().localCameraStream;
+      if (camera) session.attachLocal(camera);
+      session.sendChat({ kind: "screen_stop", ts: Date.now(), id: randomId(10) });
     } else {
       try {
         const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
@@ -904,6 +910,10 @@ async function joinSession(sid: string, mode: CommMode, peerLabel: string) {
         useFlink.setState({ isScreenSharing: false });
         return;
       }
+      if (data.kind === "participant_info") {
+        useFlink.getState().updateParticipant(from, { name: data.displayName as string, joinedAt: Date.now() });
+        return;
+      }
       
       // Handle online status updates
       if (data.kind === "peer_online") {
@@ -954,10 +964,21 @@ async function joinSession(sid: string, mode: CommMode, peerLabel: string) {
     onPeerMedia: (id, mediaStream) => {
       useFlink.setState((s) => ({
         remoteMedia: [...s.remoteMedia.filter((m) => m.id !== id), { id, stream: mediaStream }],
+        roomParticipants: new Map(s.roomParticipants).set(id, {
+          flinkNumber: id,
+          joinedAt: Date.now(),
+          videoOn: true,
+          audioOn: true,
+          screenSharing: false,
+        }),
       }));
     },
     onPeerLeft: (id, flinkNumber?: string) => {
-      useFlink.setState((s) => ({ remoteMedia: s.remoteMedia.filter((m) => m.id !== id) }));
+      useFlink.setState((s) => {
+        const participants = new Map(s.roomParticipants);
+        participants.delete(flinkNumber ?? id);
+        return { remoteMedia: s.remoteMedia.filter((m) => m.id !== id), roomParticipants: participants };
+      });
       if (flinkNumber) {
         useFlink.getState().updatePeerStatus(flinkNumber, false, false, false);
       }
@@ -990,6 +1011,7 @@ async function joinSession(sid: string, mode: CommMode, peerLabel: string) {
   await session.start(stream);
   useFlink.setState({
     session,
+    localCameraStream: stream ?? null,
     outgoing: mode === "voice" || mode === "video" ? { to: peerLabel, mode, sessionId: sid } : useFlink.getState().outgoing,
     view: mode === "chat" || mode === "ping" ? "chat" : useFlink.getState().view,
   });

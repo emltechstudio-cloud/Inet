@@ -26,6 +26,7 @@ export type ChatData = {
   status?: "sent" | "delivered" | "read";
   sessionActive?: boolean;
   inCall?: boolean;
+  displayName?: string;
 };
 
 export type SessionHandlers = {
@@ -53,6 +54,7 @@ export class FlinkSession {
     readonly token: string | undefined,
     readonly mode: CommMode,
     readonly handlers: SessionHandlers,
+    readonly displayName?: string,
   ) {
     this.signaling = new SignalingSocket(sessionId, token, {
       onEvent: (e) => void this.onSignal(e),
@@ -247,6 +249,15 @@ export class FlinkSession {
     channel.onopen = () => {
       this.handlers.onConnected(this.peers.size);
       this.handlers.onStatus("Talking");
+      if (this.displayName) {
+        channel.send(JSON.stringify({
+          v: 1,
+          kind: "participant_info",
+          displayName: this.displayName,
+          id: `participant-${Date.now()}`,
+          ts: Date.now(),
+        }));
+      }
     };
     channel.onmessage = (ev) => {
       try {

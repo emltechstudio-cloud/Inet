@@ -28,11 +28,14 @@ export function ChatView() {
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [recordingVoice, setRecordingVoice] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const voiceRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLInputElement>(null);
   const gifRef = useRef<HTMLInputElement>(null);
+  const voiceRecorderRef = useRef<MediaRecorder | null>(null);
+  const voiceChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: "smooth" });
@@ -43,6 +46,37 @@ export function ChatView() {
       bottom.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [sessionEnded, activeThread]);
+
+  async function toggleVoiceRecording() {
+    if (recordingVoice) {
+      voiceRecorderRef.current?.stop();
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      voiceRef.current?.click();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      voiceChunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) voiceChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(voiceChunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        stream.getTracks().forEach((track) => track.stop());
+        voiceRecorderRef.current = null;
+        setRecordingVoice(false);
+        if (blob.size > 0) void sendVoiceNote(new File([blob], `voice-${Date.now()}.webm`, { type: blob.type }));
+      };
+      voiceRecorderRef.current = recorder;
+      recorder.start();
+      setRecordingVoice(true);
+    } catch {
+      setRecordingVoice(false);
+    }
+  }
 
   if (!activeThread) {
     return (
@@ -237,12 +271,23 @@ export function ChatView() {
                 type="button"
                 className="flex items-center gap-2 w-full rounded-[12px] px-3 py-2 text-left text-sm hover:bg-bg"
                 onClick={() => {
-                  voiceRef.current?.click();
+                  void toggleVoiceRecording();
                   setFileMenuOpen(false);
                 }}
               >
                 <Mic className="size-4" />
-                Voice Note
+                {recordingVoice ? "Stop recording" : "Record voice note"}
+              </button>
+              <button
+                type="button"
+                className="flex items-center gap-2 w-full rounded-[12px] px-3 py-2 text-left text-sm hover:bg-bg"
+                onClick={() => {
+                  voiceRef.current?.click();
+                  setFileMenuOpen(false);
+                }}
+              >
+                <FileAudio className="size-4" />
+                Choose audio file
               </button>
               <button
                 type="button"

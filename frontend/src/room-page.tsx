@@ -36,6 +36,9 @@ export function RoomPage({ id, mode: rawMode, title }: { id: string; mode: strin
       const display = name.trim() || guestId.current;
       let stream: MediaStream | undefined;
       if (mode !== 'chat') {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error('This browser does not support camera or microphone access.');
+        }
         stream = await navigator.mediaDevices.getUserMedia({
           audio: { echoCancellation: true, noiseSuppression: true },
           video: mode === 'video' ? { facingMode: 'user' } : false,
@@ -51,7 +54,7 @@ export function RoomPage({ id, mode: rawMode, title }: { id: string; mode: strin
         onPeerMedia: (peerId, media) => setRemotes((current) => [...current.filter((item) => item.id !== peerId), { id: peerId, stream: media }]),
         onPeerLeft: (peerId) => setRemotes((current) => current.filter((item) => item.id !== peerId)),
         onConnected: () => setStatus('Connected'),
-      });
+      }, display);
       await session.start(stream);
       sessionRef.current = session;
       setJoined(true);

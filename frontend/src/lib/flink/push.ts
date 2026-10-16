@@ -1,8 +1,12 @@
 import { urlBase64ToUint8Array } from "@/lib/utils";
 import { flinkApi } from "./api";
 
-let notificationInterval: ReturnType<typeof setInterval> | null = null;
+const notificationIntervals = new Map<string, ReturnType<typeof setInterval>>();
 const pendingNotifications = new Set<string>();
+
+function notificationIcon() {
+  return new URL(`${import.meta.env.BASE_URL}icon.svg`, window.location.href).toString();
+}
 
 export async function registerFlinkPush(token: string, requestPermission = false) {
   if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
@@ -52,16 +56,14 @@ export function showPersistentNotification(title: string, body: string, tag: str
       body,
       tag,
       data,
-      icon: "icon.svg",
+      icon: notificationIcon(),
     };
     reg.showNotification(title, options);
   });
-  notificationInterval = setInterval(() => {
+  const interval = setInterval(() => {
     if (!pendingNotifications.has(tag)) {
-      if (notificationInterval) {
-        clearInterval(notificationInterval);
-        notificationInterval = null;
-      }
+      clearInterval(interval);
+      notificationIntervals.delete(tag);
       return;
     }
     navigator.serviceWorker.ready.then((reg) => {
@@ -69,19 +71,19 @@ export function showPersistentNotification(title: string, body: string, tag: str
         body,
         tag,
         data,
-        icon: "icon.svg",
+        icon: notificationIcon(),
       };
       reg.showNotification(title, options);
     });
   }, 30000);
+  notificationIntervals.set(tag, interval);
 }
 
 export function dismissPersistentNotification(tag: string) {
   pendingNotifications.delete(tag);
-  if (notificationInterval) {
-    clearInterval(notificationInterval);
-    notificationInterval = null;
-  }
+  const interval = notificationIntervals.get(tag);
+  if (interval) clearInterval(interval);
+  notificationIntervals.delete(tag);
 }
 
 export function notifyIncomingCall(from: string, mode: string) {
